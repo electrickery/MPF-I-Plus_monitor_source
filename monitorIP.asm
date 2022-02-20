@@ -1216,624 +1216,238 @@ INSET3:
         PUSH    AF
 
 ;Routine GMV needs 3 parameters which are stored in    ---- page 21 ----
+;step-buffer (STEPBF):
+;STEPBF  : starting address (2bytes).
+;STEPBF+2: ending address (2bytes).
+;STEPBF+4:destination address (2bytes).
 
-
-
-
-1219
-;step-buffer(STEPBF):
-1220
-;STEPBF:startingaddress(2bytes).
-1221
-;STEPBF+2:	endingaddress(2bytes).
-1222
-;STEPBF+4:destinationaddress(2bytes).
-1223
-
-
-
-
-
-
-
-
-;Echotheinputcharacterwith
-;<?>=
-;?isIorDaccordingtoINSERT.
-;commandorDELETEcommand
-;respectively.
-;Getthecurrentlimitaddress.
-;/
-0421
-CD2409
-1242
-
-CALL
-CHRWR
-'<I>=<
-currentlimitaddress>/
-0424
-37
-1243
-
-SCF
-
-
-
-0425
-3F
-1244
-
-CCF
-
-
-
-
-
-1245
-INSETl:
-
-
-
-
-0426
-CD6F06
-1246
-
-CALL
-GET
-
-Getastringofcharacters
-
-
-1247
-
-
-
-
-endtheinputwith<CR>.
-0429
-3A0DFF
-1248
-LD
-A,(INPBF+9)
-042C
-2812
-.1249
-
-JR
-Z,INSET2
-;For<CR>condition•
-042E
-FE43
-1250
-
-CP
-'C'
-
-0430
-CC1702
-1251
-
-CALL
-Z,CLRI
-;ForC condition.
-0433
-280B
-1252
-
-JR
-Z,INSET2
-
-0435
-2108FF
-1253
-
-LD
-HL,INPBF+4
-
-0438
-CDE208
-1254
-
-CALL
-CHKHE2
-;Getnewlimitaddress.
-043B
-38E9
-1255
-
-JR
-C,INSETl
-;JumptoINSET!iftheinput
-
-
-1256
-
-
-
-;datasisillegal.
-043D
-22EBFE
-1257
-
-LD
-(END_ADDR),HL
-
-
-
-1258
+        CALL    GMV
+        LD      HL,(STEPBF+4)
+        LD      (HL),A
+        LD      HL,(STEPBF)
+        INC     HL
+        POP     AF
+        JP      Z,CR3
+        JR      INSET3
+INSET4:
+        PUSH    AF
+        CALL    ECHO_CH        ;Echo the input character with
+                                ;<?>=
+                                ;? is I or D according to INSERT.
+                                ;command or DELETE command
+                                ;respectively.
+        LD      HL,(END_ADDR)   ;Get the current limit address.
+        CALL    HEXX
+        LD      A,2FH           ;/
+        CALL    CHRWR    ; '<I>=< current limit address>/^
+        SCF
+        CCF
+INSET1:
+        CALL    GET             ; Get a string of characters
+                                ; end the input with <CR>.
+        LD      A,(INPBF+9)
+        JR      Z,INSET2        ;For <CR> condition.
+        CP      'C'
+        CALL    Z,CLRI          ;For C condition.
+        JR      Z,INSET2
+        LD      HL,INPBF+4
+        CALL    CHKHE2          ;Get new limit address.
+        JR      C,INSET1        ;Jump to INSET1 if the input
+                                ;datas is illegal.
+        LD      (END_ADDR),HL
 INSET2:
+        CALL    CR3              ;Print message.
+        POP     AF
+        CALL    MEMEX2
+        RET
 
+;*************************************************************
 
+; Executed when 'n' key is pressed.
+; MPF_IP will display the current limit address of DELETE
+; command.
+; Avoid to changing the contents in SYSTEM RAM we must
+; set thelimit address.
+; The default value of limit address is 0FE00H.
 
-0440
-CD8509
-1259
+; (1) Type <CR> -- To see the current limit address.
+; (2) Type C    -- To clear limit address (i.e.,set the
+;                     limit address to be 0FE00H).
+; (3) Enter the hexadecimal address -- To set the new  ---- page 22 ----
+;                                      limitaddress.
 
-CALL
-CR3
-;Printmessage.
-04.43
-Fl
-1260
+; When MPF IP display <D>= you can enter the hexadecimal
+; address which content you want to be deleted.
+; You can delete one byte from memory at a time.
 
-POP
-AF
-
-0444
-CD1603
-1261
-
-CALL
-MEMEX2
-
-0447
-C9
-1262
-
-RET
-
-
-1263
-1264
-·,***************-*********************************************
-1265
-
-
-
-
-
-
-
-
-
-
-
-
-..
-
-
-
-
-
-
-
-
-
-LOC
-
-MPF IPOBJCODEMSTMTSOURCESTATEMENT
-
-1983.1.1	PAGE23
-ASM5.9
-
-1277
-1278
-1279
-1280
-1281
-1282
-1283
-limitaddress.
-
-When MPF IP display <D>= you can enter the hexadecimaladdresswhichcontentyouwanttobedeleted.
-Youcandeleteonebytefrommemoryatatime.
 DELETE:
+        CALL    INSET4
+        LD      (STEPBF+4),HL
+        LD      DE,(END_ADDR)
+        LD      (STEPBF+2),DE
+        INC     HL
+        LD      (STEPBF),HL
+        CALL    GMV
+        XOR     A
+        LD      (DE),A
+        JP      CR3
 
-
-
-
-
-
-
-1294
-1295
-1296
-1297
-1298
-1299
-1300
-1301
-1302
-
-·,**************************************************************
-Executedwhen'J'keyispressed.
-Instruction JR and DJNZ requires relative addresses.MPF IP supports the calculation of relative addressesthroughtthe 'J'command.
-JUMP:
-
-
-
-
-
-
-
-LOC
-
-MPF IPOBJCODEMSTMTSOURCESTATEMENT
-
-1983.1.1	PAGE24
-ASM5.9
-
-0479	12
-1335
-1336
-1337
-LD	(DE);A
-Savetheoffsetinto
-the next byte of opcode.(JRorDJNZ)
-047A
-C38509
-1338
-1339
-1340
-JP	CR3
 ;**************************************************************
-..
 
+; Executed when 'J' key is pressed.
+; Instruction JR and DJNZ requires relative addresses.
+; MPF_IP supports the calculation of relative addresses
+; throught the 'J' command.
 
+JUMP:
+        CALL    MEMEX2      ;Get starting address.
+        PUSH    HL
+        CALL    GETHL       ;Get destination address.
+        POP     DE          ;Load starting address
+                            ;into DE.
+        INC     DE          ;Increase this address by 2.
+                            ;Relative address is used in
+                            ;instruction JR and DJNZ.
+                            ;The codes for them are 2 bytes.
+                            ;The PC is increased by 2 after
+                            ;opcode is fetched.
+        INC     DE
+        OR      A
+        SBC     HL,DE       ;Load destination 
+                            ;address into HL.
+        LD      A,L         ;Check if the offset is between
+                            ;+127 (007FH) and -128 (FF80H).
+                            ;If the offset is positive, both
+                            ;H and bit 7 of L must be zero;
+                            ;if it is negative, H and but 7 of
+                            ;L must be FF and 1. In both cases
+                            ;adding H with bit 7 of L results
+                            ;in 0.
+                            ;Rotote bit 7 of L into carry
+                            ;flag.
+        RLA
+        LD      A,H
+        ADC     A,0         ;Add H and bit 7 of L.
+        JP      NZ,ERROR    ;Branch to ERROR if
+                            ;the results is nonzero.
+        LD      A,L
+        DEC     DE          ;                          ---- page 23 ----
+        LD      (DE),A      ;Save the offset into
+                            ;the next byte of opcode.
+                            ;(JR or DJNZ)
+        JP      CR3
+        
+;**************************************************************
 
+;Executed when 'B' ket is pressed.
+;The MPF_IP will display the current address of breakpoint.
+; (1) Type <CR> -- To see the currently address of breakpoint
+;                          address.
+; (2) Type C    -- To clear breakpoint.
+; (3) Enter the hedadecimal address -- To set new breakpoint.
 
+BREAK:
+        CALL    ECHO_CH ;Echo the input character with <B>=
+DISBR:  LD      HL,(BRAD)
+        CALL    HEXX    ;Display the current assigned breakpoint.
+        LD      A,2FH   ;/
+        CALL    CHRWR   ; <B>=< current break point address >/^
+        SCF
+        CCF
+BREAK1:
+        CALL    GET
+        LD      A,(INPBF+9)
+        JR      Z,83            ;For <CR> condition.
+        CP      'C'             ; For C condition.
+        CALL    CLRB
+        JR      Z,83
+        LD      HL,INPBF+4
+        CALL    CHKHE2          ;Get new breakpoint address
+                                ;stored into HL.
+        JR      C,BREAK1        ;Jump to BREAK1 if the datas
+                                ;are not hexadecimal values.
+        LD      (BRAD),HL
+B3:
+        LD      HL,(BRAD)
+        LD      A,(HL)
+        LD      (BRDA),A
+        JP      CR3
 
+;**************************************************************
 
+;Executed when 'S' is pressed.
+;Execution at specified address or current address.
 
+STEP:
+        LD      B,A
+        LD      A,(STEPFG)
+        AND     A
+        LD      A,B
+        JR      NZ,P111         ;If zero,then execute at the
+                                ;current address.
+        CALL    MEMEX2          ;Get the specified address.
+        LD      (USERPC),HL
+P111    LD      A,11101111B     ;This data will be output to
+                                ;port C of 8255 II to enable BREAK.
+                                ;It is done by routine PREOUT. ---- page 24 ----
+        JR      PREOUT
 
+;
+;**************************************************************
 
-LOC
-MPFIPOBJCODEMSTMTSOURCESTATEMENT
-1983.1.1	PAGE25
-ASM5.9
+;Executed when 'G' key is pressed.
+;Execution at specified address or current address.
+;The following routine is the service routine for
+;'GO' key.
 
-04Cl
-181C
-1393
-1394
-1395i
-JR	PREOUT
-1396
-1397
-·I**************************************************************
-1398
-;Executedwhen'G' keyispressed.
-1399
-;Executionatspecifiedaddressorcurrentaddress.
-1400
-;Thefollowingroutineis theserviceroutinefor
-1401
-;'GO'key.
-1402
-
-th<G>=
-
-
-1406
-
-
-;endtheinputwith<CR>•
-04C9
-3A08FF
-1407
-LD
-A,(INPBF+4)
-
-04CC
-FE0D
-1408
-CP
-0DH
-04CE
-2808
-1409
-
-JR
-Z,EXEC2
-;Ifzero,thenexecuteat
-
-
-1410
-
-
-
-;thecurrentaddress.
-0400
-CDDF08
-1411
-
-CALL
-CHKHEX
-;Get specifiedaddress.
-0403
-38Fl
-1412
-
-JR
-C,GOEXEl
-;JumptoGOEXElifoneof
-
-
-1413
-
-
-
-;theinputdatumisillegal.
-0405
-229EFF
-1414
-
-LD
-(USERPC),HL
-
-
-
-1415
+GOEXEC:
+        CALL    ECHO_CH         ;Echo the input character with <G>=
+GOEXE1  CALL    GET             ;Get a string of characters
+                                ;end the input with <CR> .
+        LD      A,(INPBF+4)
+        CP      0DH
+        JR      Z,EXEC2         ;If zero ,then execute at
+                                ;the currentaddress.
+        CALL    CHKHEX          ;Get specified address.
+        JR      C,GOEXEl        ;Jump to GOEXE1 if one of
+                                ;the input datum is illegal.
+        LD      (USERPC),HL
 EXEC2:
-
-
-
-0408
-2AEDFE
-1416
-
-LD
-HL,(BRAD)
-;Gettheaddress ofbreakpoint.
-040B
-36EF
-1417
-
-LD
-(HL),0EFH
-;InstructionRST28H.
-
-
-1418
-
-
-
-;Thecontentofbreakaddress
-
-
-1419
-
-
-
-;ischangedtoRST28Hbefore
-
-
-1420
-
-
-
-;thecontrolistransferedto
-
-
-1421
-
-
-
-;user'sprogram.This
-
-
-1422
-
-
-
-;willcauseatrapwhenuser's
-
-
-1423
-
-
-
-;PCpassesthispoint.
-040D
-3EFF
-1424
-
-LD
-A,0FFH
-;SaveFFintoTEMPl. Thisdata
-
-
-1425
-
-
-
-;willbeoutputto portClater.
-
-
-1426
-
-
-
-;FFisusedtodisablebreakpoint.
-04DF
-32FAFE
-1427
-PREOUT:
-LD
-(TEMPl),A
-
-04E2
-3EA5
-1428
-
-LD
-A,0A5H
-
-04E4
-32F2FE
-1429
-
-LO
-(STEPFG),A
-
-04E7
-3AA0FF
-1430
-
-LD
-A,(USERIF)
-;Savetwoinstructionsinto
-
-
-1431
-
-
-
-;TEMPandTEMP+l.Thesetwo
-
-
-1432
-
-
-
-;instructionswillbeexecuted
-
-
-1433
-
-
-
-;later.Iftheuser'sIFF
-
-
-1434
-
-
-
-;(interruptflip-flop)is1,
-
-
-1435
-
-
-
-;theinstructionsare'EIRET'.
-
-
-1436
-
-
-
-;Otherwise,theyare'DIRET'.
-04EA
-CB47
-1437
-
-BIT
-0,A
-
-04EC
-21FBC9
-1438
-
-LD
-HL,0C9FBH
-;'EI','RET'
-04EF
-2002
-1439
-
-JR
-NZ,EIDI
-
-04Fl
-2EF3
-1440
-
-LD
-L,0F3H
-;'DI'
-
-
-1441
+        LD      HL,(BRAD)       ;Get the address of breakpoint.
+        LD      (HL),0EFH       ;Instruction RST28H.
+                                ;The content of breakaddress
+                                ;is changed to RST28H before
+                                ;the control is transfered to
+                                ;user's program. This
+                                ;will cause a trap when user's
+                                ;PC passes this point.
+        LD      A,0FFH          ;Save FF into TEMP1. This data
+                                ;will be output to port Clater.
+                                ;FF isused to disable breakpoint.
+PREOUT: LD      (TEMP1),A
+        LD      A,0A5H
+        LD      (STEPFG),A
+        LD      A,(USERIF)      ;Save two instructions into
+                                ;TEMP and TEMP+1. These two
+                                ;instructions will be executed
+                                ;later.  If the user's IFF
+                                ;(interrupt flip-flop) is 1,
+                                ;the instructions are 'EI RET'.
+                                ;Otherwise, they are 'DI RET'.
+        BIT     0,A
+        LD      HL,0C9FBH       ;'EI','RET'
+        JR      NZ,EIDI
+        LD      L,0F3H          ;'DI'
 EIDI:
-
-
-
-04F3
-22FBFE
-1442
-
-LD
-(TEMPl+l),HL
-
-04F6
-3188FF
-1443
-
-LD
-SP,REGBF
-;Restoreuser'sregistersby
-
-
-1444
-
-
-
-;settingSPtoREGBF(register
-
-
-1445
-
-
-
-;buffer)andcontinuously
-
-
-1446
-
-
-
-;poppingthestack.
-04F9
-Fl
-1447
-
-POP
-AF
-
-04FA
-Cl
-1448
-
-POP
-BC
-
-04FB
-Dl
-1449
-
-POP
-DE
-
-04FC
-El
-1450
-
-POP
-HL
+        LD      (TEMP1+1),HL
+        LD      SP,REGBF        ;Restore user's registers by
+                                ;setting SP to REGBF (register
+                                ;buffer) and continuously
+                                ;popping the stack.
+        POP     AF
+        POP     BC
+        POP     DE
+        POP     HL              ;                      ---- page 25 ----
 
 
 
