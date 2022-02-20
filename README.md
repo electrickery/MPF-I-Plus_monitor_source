@@ -1,3 +1,5 @@
+The original scans and pdf and docx documents can be found at:
+
 https://pool378.seedbox.fr/files/index.php/s/Rx3poMMH34XbpDq?path=%2F
 
 The docx document is used to get the initial text, the pdf document to
