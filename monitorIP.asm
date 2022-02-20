@@ -1,8 +1,8 @@
 ;*********************************************************
 ;*                                                       *
-;*     COPYRIGHT, MULTITECH INDUSTRIAL CORP. 1983        *
-;*     ALL right reserved.                               *
-;*     No part of this software maybe copied without     *
+;*    COPYRIGHT, MULTITECH INDUSTRIAL CORP. 1983         *
+;*    ALL right reserved.                                *
+;*    No part of this software maybe copied without      *
 ;*    the express written consent of MULTITECH           *
 ;*    INDUSTRIAL CORP.                                   *
 ;*                                                       *
@@ -1448,805 +1448,314 @@ EIDI:
         POP     BC
         POP     DE
         POP     HL              ;                      ---- page 25 ----
+        EX      AF,AF'
+        POP     AF
+        EX      AF,AF'
+        EXX
+        POP     BC
+        POP     DE
+        POP     HL
+        EXX
+        POP     IX
+        POP     IY
+        LD      SP,(USERSP)         ;Restore user's SP.
+        LD      (USERAF+l),A
+        LD      A,(USERIF+l)        ;Restore user's I.
+        LD      I,A
+        PUSH    HL                  ;The next 3 instructions
+                                    ;push the address being
+                            ;displayed now (in USERPC)
+                            ;onto stack without changing
+                            ;HL register. This address will be
+                            ;treated as user's new PC.
+        LD      HL,(USERPC)
+        EX      (SP),HL
+        LD      A,(TEMP1)   ;Output the data stored in
+                            ;TEMP1 to port C of 8255 II
+                            ;This data is prepared by
+                            ;command STEP or GO.
+                            ;In first case, it is
+                            ;11101111 and will enable
+                            ;breakpoint. In other
+                            ;cases, it is FF and will
+                            ;disable breakpoint.
+                            ;If break is enabled, non­
+                            ;maskable interrupt will occur
+                            ;5M1's after the OUT instruction.
+        OUT     (KIN),A
+        LD      A,(USERAF+l)    ;1st M1.
+        JP      TEMPl+1 ;2nd M1,
+                        ;Execute the two instructions
+                        ;stored in RAM. They are:
+                        ;   EI (or DI)      ;3rd M1
+                        ;   RET             ;4th M1
+                        ;The starting address of user's
+                        ;programs has been pushed onto
+                        ;the top of the stack. RET pops
+                        ;out this address and transfers
+                        ;control to it. The first M1
+                        ;of the user's program will be the
+                        ;5th M1 after OUT. If break point
+                        ;is enabled, NMI will coour after
+                        ;this instruction is completed.
+                        ;This is the mechanism of single
+                        ;step.
 
-
-
-
-
-
-
-
-LOC
-
-MPF IPOBJCODE MSTMTSOURCESTATEMENT
-
-1983.1.1	PAGE26
-ASM5.9
-
-04FD
-08
-1451
-EX
-AF,AF'
-04FE
-Fl
-1452
-POP
-AF
-04FF
-0500
-0501
-08
-D9
-Cl
-1453
-1454
-1455
-EXEXXPOP
-AF,AF'
-BC
-0502
-Dl
-1456
-POP
-DE
-0503
-El
-1457
-POP
-HL
-0504
-0505
-D9DDEl
-1458
-1459
-EXXPOP
-
-IX
-0507
-FDEl
-1460
-POP
-IY
-0509
-ED7B9CFF
-1461
-LD
-SP,(USERSP)	;Restoreuser'sSP.
-050D
-3289FF
-1462
-LD
-(USERAF+l),A
-0510
-3AA1FF
-1463
-LD
-A,(USERIF+l)	;Restoreuser'sI•
-0513
-ED47
-1464
-LD
-I,A
-0515
-ES
-1465
-PUSH
-HL	;Thenext 3instructions
-
-
-1466
-
-;pushtheaddress being
-1467
-;displayednow(inUSERPC)
-1468
-;ontostackwithoutchanging
-1469
-;HLregister.Thisaddresswillbe
-
-
-1470
-
-;treatedasuser'snewPC.
-0516
-2A9EFF
-1471
-LD
-HL,(USERPC)
-0519
-E3
-1472
-EX
-(SP),HL
-051A
-3AFAFE
-1473
-LD
-A,(TEMPl);Outputthedatastoredin
-
-
-1474
-
-;TEMPltoportCof8255II
-
-
-1475
-
-;Thisdataispreparedby
-
-
-1476
-
-;commandSTEPorGO.
-
-
-1477
-
-,Infirstcase,itis
-
-
-1478
-
-;11101111andwillenable
-
-
-1479
-
-;breakpoint.Inother
-
-
-1480
-
-;cases,itisFFandwill
-
-
-1481
-
-;disablebreakpoint.
-
-
-1482
-
-;Ifbreakisenabled,non­
-
-
-1483
-
-;maskableinterruptwilloccur
-
-
-1484
-
-;5Ml'saftertheOUTinstruction.
-0510
-D392
-1485
-OUT
-(KIN),A
-051F
-3A89FF
-1486
-LD
-A,(USERAF+l)	;1stMl•
-0522
-C3FBFE
-1487
-1488
-1489
-JP	TEMPl+l;2ndMl,
-;Executethetwoinstructions
-;storedinRAM.Theyare:
-
-
-
-
-
-
-
-
-
-1503
-1504
-1505
-1506
-1507
-1508
-
-·,**************************************************************
-Themonitorreserves26locationsinmemoryforthetwenty-oneregistersasfollows:
-AFBCDEHLAF'BC'DE'HL'IXIYSPPCI
-
-
-
-
-..
-
-
-
-
-
-
-
-
-
-LOC
-
-MPF IPOBJCODEMSTMTSOURCESTATEMENT
-
-1983.1.l	PAGE27
-ASM5.9
-
-1509
-1510
-1511
-1512
-1513
-1514
-1515
-
-Type<CR>--Displayregisters(twopairsofregisters).
-Type<registername><CR>--Displayregisters(pairof
-registers)Type	--Alterregistercontents.
-REGEXC:
-CALLREGEX2CALL
-ECHO CH ;Echo the input character with <R>=GET	;Getastringofcharacters
-;endthe inputwith<CR>•
-
-
-
-;Jump toREGEX2ifone
-;oftheinputdatasisillegal.
-
-;SetC=0
-
-
-;Displaythefirstfourregister
-;contents(AFBC).
-
-;Check'condition.
-;(i.e.,A'	F'B'C'D'E'H'L')
-
-
-054B
-054C
-
-7EFE3A_
-
-1541
-1542
-1543
-1544
-1545
-
-LD
-Pl05	CP
-
-A,(HL)3AH
-
-
-;Check:condition.
-;Ifzero,thenchangethecontent
-;ofasinglebyteregister
-;(i.e.,AFBCDEHLA'F'B'C'D'E'H'L'I)
-
-;Ifzero,thendisplaytwosingle
-;byteregister(AFA'F'I).
-;oraregisterpair(BCDEHL
-;BC'DE'HL').
-;oratwobyteregisters.
-;(IXIYSPPC)
-
-
-;Check'condition.
-;(i•e.,AF' BC'DE'HL')
-
-
-
-
-Change the contentsof twosinglebyteregister.
-(AFAFIIF)•
-
-
-
-
-
-·-27-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-1599RDSPL0:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-05A3
-lA
-1625
-LD
-A,(DE)
-;Get
-thefirstregistercontent.
-05A4
-CD9A0A
-1626
-CALL
-HEX2
-
-
-05A7
-18
-1627
-DEC
-DE
-
-
-05A8
-lA
-1628
-LD
-A,(DE)
-;Get
-thesecondregistercontent.
-05A9
-CD9A0A
-1629
-CALL
-HEX2
-
-
-05AC
-23
-1630
-INC
-HL
-
-
-05AD
-13
-1631
-INC
-DE
-
-
-05AE
-13
-1632
-INC
-DE
-
-
-05AF
-10E2
-1633
-DJNZ
-RDSPLl
-
-
-0581
-3E20
-1634
-LD
-A,20H
-;Set
-registermode.
-0583
-3280FF
-1635
-LD
-(TYPEFG),A
-
-
-0586
-C38C08
-1636
-JP
-REG2
-
-
-
-
-1637
-1638
-·I**************************************************************
-
-
-1639
-
-
-
-1640
-;ExecutedwhenUPorDOWNarrowis pressed.
-
-
-1641
-;Executedinregistermodeonly.
-
-
-1642
-
-
-
-1643
-RFOR:	;Displaynextfourregistercontents.
-0589
-3A03FF
-1644
-LD	A,(RCOUNT)
-05BC
-3C
-1645
-INC	A
-058D
-3C
-1646
-INC	A
-05BE
-3C
-1647
-INC	A
-05BF
-3C
-1648
-INC	A
-05C0
-FE18
-1649
-CP	24
-05C2
-2834
-1650
-JR	Z,RBACKl
-05C4
-3030
-1651
-JR	NC,RBACK2
-05C6
-3203FF
-1652
-RFORl	LD	(RCOUNT),A
-05C9
-3AF2FE
-1653
-LD	A,(STEPFG)	;IfthecontentofSTEPBFis
-
-
-1654
-;zero.
-
-
-1655
-;it meansMPFIP executesSTEP
-
-
-1656
-;orGOcommand.
-05CC
-A7
-1657
-AND	A
-05CD
-2808
-1658
-JR	Z,RFOR2
-05CF
-CDB909
-1659
-CALL	CLEAR
-05D2
-2A9EFF
-1660
-LD	HL,(USERPC)
-05D5
-CD920A
-1661
-CALL	HEX4
-05D8
-1805
-1662
-JR	RFOR3
-05DA
-3E52
-1663
-RFOR2	LD	A,52H	;Getpattern'<R>='
-05DC
-CD6008
-1664
-CALL	ECHOCH
-05DF
-218E0B
-1665
-RFOR3	LD	HL,RTABLE
-05E2
-3A03FF
-1666
-LD	A,(RCOUNT)
-05E5
-85
-1667
-ADD	A,L
-05E6
-6F
-1668
-LD	L,A
-05E7
-56
-1669
-LD	D,(HL)
-05E8
-23
-1670
-INC	HL
-05E9
-5E
-1671
-LD	E,(HL)
-05EA
-C36B05
-1672
-JP	RDSPL4
-
-
-1673
-RBACK:	;Displaylastfourregister
-
-
-1674
-;contents.
-05ED
-3A03FF
-1675
-LD	A,(RCOUNT)
-05F0
-FE02
-1676
-CP	2
-05F2
-2804
-1677
-JR	Z,RBACKl
-05F4
-38D0
-1678
-JR	C,RFORl
-05F6
-3D
-1679
-RBACK2DEC	A
-05F7
-3D
-1680
-DEC	A
-05F8
-3D
-1681
-RBACKlDEC	A
-05F9
-3D
-1682
-DEC	A
-
-
-
-
-05FA
-18CA
-1683
-1684
-1685
-1686
-1687
-1688
-1689
-1690
-1691
-1692
-1693
-JR	RFORl
 ;**************************************************************
-;Therearefourkindsofregistermodifymodeasfolloes:
-    (1) <R>=H:<onebytedata><CR>
-    (2) <R>=H':<onebytedata><CR>
-    (3) <R>=HL:< twobytedata><CR>
-    (4) <R>=HL':<twobytedata><CR>
 
-Illegalregistername.
+;The monitor reserves 26 locations in memory for the 
+;twenty-one registers as follows:
+; AF BC DE HL AF' BC' DE' HL' IX IY SP PC I            ---- page 26 ----
 
+; Type <CR> -- Display registers (two pairs of registers).
+; Type <register name><CR> -- Display registers (pair of
+;                             registers)
+; Type :    -- Alter register contents.
 
+REGEXC:
+        CALL    ECHO CH ;Echo the input character with <R>=
+REGEX2  CALL    GET             ;Get a string of characters
+                                ;end the input with<CR>.
+        LD      HL,INPBF+3
+        PUSH    HL
+        INC     HL
+        CALL    CHKHE2
+        POP     HL
+        JR      C,REGEX2        ;Jump to REGEX2 if one
+                                ;of the input datas is illegal.
+        CALL    LDA
+        LD      DE,0
+        LD      C,D             ;Set C=0
+        LD      A,0DH
+        LD      D,(HL)
+        CP      D
+        JR      Z,REGALL        ;Display the first four register
+                                ;contents(AF BC).
+        INC     HL
+        LD      A,(HL)
+        CP      27H             ;Check ' condition.
+                                ;(i.e.,A' F' B' C' D' E' H' L')
+        JR      NZ,P105
+        INC     HL
+        LD      C,A
+        LD      A,(HL)
+P105    CP      3AH             ;Check : condition
+                                ;If zero ,then change the content
+                                ;of a single byte register
+                                ;(i.e.,AFBCDEHLA'F'B'C'D'E'H'L'I)
+        JP      Z,RMODFY
+        CP      0DH
+        JR      Z,RDSPL3        ;If zero ,then display two single
+                                ;byte register (A F A' F' I).
+                                ;or a register pair (BC DE HL
+                                ;BC' DE' HL').
+                                ;or a two byte registers.
+                                ;(IX IY SP PC)
+        LD      E,(HL)
+        INC     HL
+        LD      A,(HL)
+        CP      27H             ;Check ' condition.
+                                ;(i•e., AF' BC' DE' HL')
+        JR      NZ,P106
+        INC     HL
+        LD      C,A
+        LD      A,(HL)
+P106    CP      3AH
+        JP      Z,RMODF1        ;Change the contents of two
+                                ;single byte register.
+                                ;(AF AF' IF).          ---- page 27 ----
+                                ;or a register pair (BC DE
+                                ;HL BC' DE' HL').
+                                ;or a two byte register (
+                                ;IX IY SP PC).
+        CP      0DH
+        JR      Z,RDISPLY       ;Display two single byte
+                                ;register or a register pair
+                                ;or a two byte register.
+                                
+;**************************************************************
 
+REGALL:                         ;Display 'AF BC'
+        LD      DE,4100H
 
+RDSPL4:                         ;Display four bytes of register
+                                ;contents.
+        LD      B,2
+        JR      RDSPL0
+RDSPL3:
+        LD      A,D
+        CP      'I'             ;Chgeck I register.
+        JR      NZ,RDSPLY
+        LD      E,46H
+        
+;**************************************************************
 
+;Display two single byte registers (AF AF' I) or
+;a register pair ( BC DE HL BC' DE' HL' ) or
+;a two byte register ( IX IY SP PC ).
 
+RDSPLY:
+        LD      B,1
+RDSPL0:
+        PUSH    BC
+        CALL    SEARC_REG
+        POP     BC
+        JR      Z,REGALL        ;Jump to REGALL if the input
+                                ;register name is illegal.
+        CALL    MEMEX3
+RDSPL6  LD      A,(RCOUNT)
+        BIT     0,A
+        JR      Z,RDSPL1
+        DEC     HL
+        DEC     DE
+        LD      A,(RCOUNT)
+        RES     0,A             ;Registers are displayed by
+                                ;pair. Find the count of
+                                ;pair leader. (count of
+                                ;the lower one)
+        LD      (RCOUNT),A
+RDSPL1  CALL    SPACE1          ;Insert a space.
+        LD      A,(HL)          ;Get the first register name.
+        CALL    CHRWR
+        INC     HL
+        LD      A,(HL)          ;Get the second register name.
+        CALL    CHRWR
+        CALL    SPACE1          ;Insert a space.
+        INC     DE              ;                      ---- page 28 ----
+        LD      A,(DE)          ;Get the first register content.
+        CALL    HEX2
+        DEC     DE
+        LD      A,(DE)          ;Get the second register content.
+        CALL    HEX2
+        INC     HL
+        INC     DE
+        INC     DE
+        DJNZ    RDSPL1
+        LD      A,20H           ;Set register mode.
+        LD      (TYPEFG),A
+        JP      REG2
 
+;**************************************************************
 
+;Executed when UP or DOWN arrow is pressed.
+;Executed in register mode only.
 
-Illegalregistername.
+RFOR:                           ;Display next four register contents.
+        LD      A,(RCOUNT)
+        INC     A
+        INC     A
+        INC     A
+        INC     A
+        CP      24
+        JR      Z,RBACK1
+        JR      NC,RBACK2
+RFOR1   LD      (RCOUNT),A
+        LD      A,(STEPFG)      ;If the content of STEPBF is
+                                ;zero.
+                                ;it means MPF_IP executes STEP
+                                ;or GO command.
+        AND     A
+        JR      Z,RFOR2
+        CALL    CLEAR
+        LD  HL,(USERPC)
+        CALL    HEX4
+        JR      RFOR3
+RFOR2   LD      A,52H           ;Get pattern '<R>='
+        CALL    ECHOCH
+RFOR3   LD      HL,RTABLE
+        LD      A,(RCOUNT)
+        ADD     A,L
+        LD      L,A
+        LD      D,(HL)
+        INC     HL
+        LD      E,(HL)
+        JP      RDSPL4
+RBACK:                          ;Display last four register
+                                ;contents.
+        LD      A,(RCOUNT)
+        CP      2
+        JR      Z,RBACK1
+        JR      C,RFOR1
+RBACK2  DEC     A
+        DEC     A
+RBACK1  DEC     A
+        DEC     A               ;                      ---- page 29 ----
+        JR      RFOR1
+        
+;**************************************************************
 
+;There are four kinds of register modify mode as folloes:
 
+;   (1) <R>=H:< one byte data ><CR>
+;   (2) <R>=H':< one byte data ><CR>
+;   (3) <R>=HL:< two byte data ><CR>
+;   (4) <R>=HL':< two byte data ><CR>
 
+RMODFY:
+        CALL    SEARC_REG
+        JR      Z,MEMDP3        ;Illegal register name.
+        PUSH    DE
+        CALL    GETHL
+        POP     DE
+        BIT     0,C
+        JR      Z,RODD
+        DEC     DE
+RMODF2  LD      (DE),A
+        JP      CR3
+RODD    INC     DE
+        JR      RMODF2
+RMODF1  CALL    SEARC_REG
+        JR      Z,MEMDP3        ;Illegal register name.
+        BIT     0,C
+        JR      Z,RMODF3
+        DEC     DE
+RMODF3  PUSH    DE
+        CALL    GETHL
+        POP     DE
+        LD      (DE),A
+        INC     DE
+        LD      A,H
+        LD      (DE),A
+        JP      CR3
 
+;**************************************************************
 
+; You can examine these registers when you STEP or GO
+; a machine language.
 
-
-
-1720
-1721
-1722
-1723
-1724
-1725
-1726
-
-·,**************************************************************
-;YoucanexaminetheseregisterswhenyouSTEPor GO
-;amachinelanguage.
 MEMDP2:
-0628
-062B
-062E
-0631
-CDB9092A9EFFCD920AC36805
-1727
-1728
-1729
-1730
-1731
-CALLLDCALL
-MEMDP3JP
-CLEARHL,(USERPC)HEX4REGALL
-1732
-·,**************************************************************
-1733
+        CALL    CLEAR
+        LD      HL,(USERPC)
+        CALL    HEX4
+MEMDP3
+        JP      REGALL
 
-1734
-Findbasesoftheregisternameandcontents.
-1735
-Input:Registername(ASCIIcode)storedinDE.
-1736
-Output:HL	BaseofRTABLE(i.e.,pointtoregister
-1737
-namebeginning).
-1738
-1739
-DE	BaseofREGBF(i.e.,pointtoregister
-bufferbegining).
-1740
-C
-CountsofregisterinRATBLE.
-
-
-
-)BJCODEM STMTSOURCESTATEMENT	ASM5.9
-
-
-
-218E0B
-cs
-AF4F
-7A
-0619
-BE
-2027
-7BA72808
-1741
-1742
-1743
-1744
-1745
-1746
-1747
-1748
-1749
-1750
-1751
-1752
-1753
-1754
-1755
+;**************************************************************
+; Find bases of the register name and contents.
+; Input :Register name (ASC II code) stored in DE.
+; Output: HL -- Base of RTABLE (i.e.,point to register
+;                               name beginning).
+;         DE -- Base of REGBF (i.e.,point to register
+;                              buffer begining).
+;          C -- Counts of register in RATBLE.          ---- page 30 ----
 
 SEARCREG:
-LDPUSHXORLDLDLD
-SERCH	CP
-
-JRLDANDJR
-
-
-HL,RTABLEBC
-A
-C,A
-A,DB,25(HL)
-
-NZ,SERCHlA,E
-A
-Z,SERCH2
-
-
-
-
-
-
-
-;Comparewiththefirst
-;register name.
-
-
-;Zero,ifitisasingle
-;byteregister.
-
-;Comparewiththesecond
-;registername.
-
-
-
-
-
-
-
-
-
-!-::6
-::::3
-:::::l
-
-79
-FE2748
-2008
-7DC6086F
-79
-C608
-4F
-
-1767
-1768
-1769
-1770
-1771
-1772
-1773
-1774
-1775
-1776
+        LD      HL,RTABLEBC
+        PUSH    BC
+        XOR     A
+        LD      C,A
+        LD      A,D
+        LD      B,25
+SERCH   CP      (HL)        ;Compare with the first
+                            ;register name.
+        JR      NZ,SERCH1
+        LD      A,E
+        AND     A
+        JR      Z,SERCH2    ;Zero,if it is a single
+                            ;byte register.
+        INC     HL
+        INC     C           ;Compare with the second
+                            ;register name.
 
 LDCPLDJRLDADDLDLDADDLD
 
