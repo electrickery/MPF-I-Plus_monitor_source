@@ -225,7 +225,7 @@ RESET1:
 
 ;**************************************************************
 
-;Thefollowingbytemakesthesumofthe monitor
+;The following byte makes the sum of the monitor
 ;code in ROM zero.
 
         DEFB    ZSUM
@@ -234,15 +234,15 @@ RESET1:
 
         ORG     38H
 
-; EntrypointofRST38H(opcodFF)ormode1interrupt.
-; FetchtheaddressstoredinlocationFF00andFF01,
-; thenjumptothisaddress.Initially,FF00andFF01
-; aresetto0066.SoRST 38 willhavethesameeffect
-; as softwarebreak.BychangingthecontentofFF00
-; and FF01, the user candefinehisorher own service
+; Entry point of RST38H (opcodFF) or mode1 interrupt.
+; Fetch the addresss to redin location FF00 and FF01,
+; then jump to this address. Initially, FF00 and FF01
+; are set to 0066. So RST 38 will have the same effect
+; as software break. By changing the content of FF00
+; and FF01, the user can define his or her own service
 ; routine.
-; The nextthreeinstructions push the contentsofFF00
-; andFF01tostackwithoutchanginganyregisters.
+; The next three instructions push the contents of FF00
+; and FF01 to stack without changing any registers.
 
         PUSH    HL
         LD      HL,(IM1AD)  ;Initially stored 0066H.
@@ -256,22 +256,22 @@ RESET1:
 ;
 ;*************************************************************
 CONT28:
-; Thisisapartofbreakserviceroutine.Itcontinues
-; theprogramatRST28.
+; This is a part of break service routine. It continues
+; the program at RST28.
 
         LD      (ATEMP),A
 
-; Themonitorhaschangedthecontentofuser's
-; program atbreakaddress.Thenext3instructions
-; restoredthedestroyedcontent.BRADcontainsthe
-; breakaddress,BRDAcontainstheoriginaldataat
-; breakaddress.
+; The monitor has changed the content of user's
+; program at break address.Then ext3 instructions
+; restored the destroyed content. BRAD contains the
+; break address, BRDA contains the original data at
+; break address.
 
         LD      HL,(BRAD)
         LD      A,(BRDA)
         LD      (HL),A
-; Sendbreakenablesignaltohardwr&counte1.
-; AnonmaskableinterruptwillbeissuedatthethMi's.
+; Send break enable signal to hardwr&counte1.
+; A nonmaskable interrupt will be issued at thethMi's.
 
         LD      A,11101111B
         OUT     (KIN),A
@@ -280,39 +280,39 @@ CONT28:
         NOP                 ; 3rd M1
         RET                 ; 4th M1
 
-; Return to user's program.Executethe1nstruct100
-; atbreakaddress,Afterfinishingoneinstruction,
-; anonmaskableinterrupthappensndthenreturns
-; tothemonitorprogramagain.
+; Return to user's program. Execute the 1nstruct100
+; at break address, After finishing one instruction,
+; a nonmaskable interrupt happensnd then returns
+; to the monitor program again.
 ;
 RESET2:
-        LD      (USERIF),HL ; Setuser'sIregisterand
-                            ; interuptflipfloptoH       ---- page 5 ----
-        LD      (TEST),HL   ; SetthecontentsofTESTand
-                            ; STEPBFtobezero.
+        LD      (USERIF),HL ; Set user's I register and
+                            ; interupt flip flop to H   ---- page 5 ----
+        LD      (TEST),HL   ; Set the contents of TEST and
+                            ; STEP BF to be zero.
 
-; TEST isaflagfortheuseofmonitoritself.Illegalkey-in
-; blanking(bit7ofTEST)andautomaticleadingzero
-; (bit0)usethisflag.Clearithere.
+; TEST is a flag for the use of monitor itself. Illegal key-in
+; blanking (bit 7 of TEST) and automatic leading zero
+; (bit 0) use this flag. Clear it here.
 
         LD      HL,USERSTK
         LD      (USERSP),HL
         CALL    INI7
         SCF
 
-; Address66Histhe addressfornonmaskableinterrupt.
-; Skipthisarea,monitorresumesat SETST0
+; Address 66H is the address for non maskable interrupt.
+; Skip this area, monitor resumes at SETST0
 
         JR      SETST0
 ;
 ;**************************************************************
 NMI:    ORG     66H
 
-; Entrypoint ofnonmaskableinterrupt.NMIwilloccur
-; whenuser'sprogramisbreaked.
-; The serviceroutinewhichstartsheresavesall
-; user'sregistersandstatus.Italso checkthevalidity
-; ofuser'sSP.
+; Entry point of non maskable interrupt. NMI will occur
+; when user's program is breaked.
+; The service routine which starts here saves all
+; user's registers and status. It also check the validity
+; of user's SP.
 
         LD      (ATEMP),A       ;SaveAregister
         LD      A,0FFH  ;DisableBREAKsignaland all digits.
@@ -320,16 +320,16 @@ NMI:    ORG     66H
         LD      (DIG2),A
         LD      (DIG3),A
         OUT     (KIN),A
-        LD      A,ATEMP         ;RestoreAregister
-RGSAVE: LD      (HLTEMP),HL     ;SaveregisterHL
-        LD      POP HL          ;Getreturnaddressfromstack
-        LD      (USERPC),HL     ;Setuser'sPCtoreturn
+        LD      A,ATEMP         ;Restore A register
+RGSAVE: LD      (HLTEMP),HL     ;Save register HL
+        LD      POP HL          ;Get return address from stack
+        LD      (USERPC),HL     ;Set user's PC to return
                                 ;address
-        LD      HL,(HLTEMP)     ;RestoreHLregister
-        LD      (USERSP),SP     ;etuser•SPtocurrentSP
-        LD      SP,USERIY+2     ;Saveotherregistersby
-        PUSH    IY              ;continuouslypushingthem
-        PUSH    IX              ;ontostack
+        LD      HL,(HLTEMP)     ;Restore HL register
+        LD      (USERSP),SP     ;set user-SP to current SP
+        LD      SP,USERIY+2     ;Save other registers by
+        PUSH    IY              ;continuously pushing them
+        PUSH    IX              ;on to stack
         EXX
         PUSH    HL
         PUSH    DE
@@ -343,16 +343,16 @@ RGSAVE: LD      (HLTEMP),HL     ;SaveregisterHL
         PUSH    BC
         PUSH    AF
         
-; ThenexttwoinstructionssaveIregister.
-; Theinterruptflip-flop(IFF2)iscopiedinto
-; parityflag{P/V)byinstructionLDA,I.                    ---- page 6 ----
-; Theiriterruptstatus(enabledordisabled)
-; canbedeterminedbytestingparityflag.
+; The next two instructions save I register.
+; The interrupt flip-flop (IFF2) is copied into
+; parity flag (P/V) by instruction LDA, I.              ---- page 6 ----
+; The interrupt status (enabled or disabled)
+; can be determined by testing parityf lag.
 
         LD      A,I
         LD      (USERIF+1),A
 
-; ThenextfourinstructionssaveIFF2into
+; The next four instructions save IFF2 into
 ; user's IFF.
         LD      A,0
         JP      PO,SETIF        ;PO--P/V=0
@@ -362,9 +362,9 @@ SETIF:  LD      (USERIF),A
 
         LD      SP,SYSSTK       ;Set SPtosystem stack.
         
-; Thenext7instructionscheckuser'sSP.
-; Iftheuser'sSPpointstoalocationnot
-; inRAM,displayERR-SP.
+; The next 7 instructions check user's SP.
+; If the user's SP points to a location not
+; in RAM, display ERR-SP.
 
         LD      HL,(USERSP)
         DEC     HL
@@ -374,35 +374,35 @@ SETIF:  LD      (USERIF),A
         CALL    RAMCHK
         JR      NZ,SETST2
 
-; Iftheuser'sstackandsystemstackare
-; overlayed,thendisplaySYS-SP.Thischecking
-; isdonebythefollowinginstructions.
+; If the user's stack and system stack are
+; overlayed, then display SYS-SP. This checking
+; is done by the following instructions.
 
         LD      DE,-USERSTK+1
         ADD     HL,DE
         JR      C,SETST3
 SETST0:
         LD      A,(BRDA)
-        LD      HL,(BRAD)	;Restorethedata atbreakpoint
+        LD      HL,(BRAD)	;Restore the data at break point
                             ;address.
         LD      (HL),A
 
-; Inexecutionof STEPor GO command,ifthe
-; user'sSPislegal(carryflagiszero)then
-; displayuser'sPCandthe firstfour
-; registercontents.
-; UsercanusetheUPorDOWNkeystocheck
-; theregistercontents.
-; Otherwise,displayfixedmessage(ERR-SP
-; orSYS-SP)
+; In execution of STEP or GO command, if the
+; user's SP is legal (carry flag is zero) then
+; display user's PC and the first four
+; register contents.
+; User can use the UP or DOWN keys to check
+; the register contents.
+; Otherwise, display fixed message (ERR-SP
+; or SYS-SP)
 
         CALL    NC,MEMDP2
 ;
 ;
 ;**************************************************************
-; Scanthe•display andkeyboard. When a keyis
-; detected,takeproperactionaccordingtothe
-; keypressed.
+; Scan the display and key board. When a key is
+; detected, take proper action according to the
+; key pressed.
 ;                                                       ---- page 7 ----
 MAIN:
         LD      SP,SYSSTK       ;Initialsystemstack.
@@ -983,638 +983,239 @@ MEMEX1  CALL    GET             ;Getastringofcharacters
                                 ;andendtheinputwith <CR>.
         CALL    CHKINP          ;Checkhexadecimalvalues.
         JR      C,MEMEXl        ;JumptoMEMEXliftheinput
-                                ;                      ---- page 17 ----
+                                ;data is illegal.      ---- page 17 ----
+        CALL    CHKHEX          ;Get the hexadecimal address
+                                ;of the first of four memory
+                                ;locationstobedisplayed,
+        LD      (MADDR),HL
+        RET
+        
 
-986
+MEMEX3:                         ;Reset the counters of INPUT
+                                ; BUFFER and DISPBF BUFFER.
+        PUSH    HL
+        LD      HL,INPBF+4
+        LD      (OUTPTR),HL
+        LD      HL,DISPBF+8
+        LD      (DISP),HL
+        POP     HL
+        RET
+        
+;**************************************************************
 
+;If you want to change the value in these location,
+;just type a colon and the values separated by spaces.
+;The final command look like this:
+;<M>=<start>:<data1 <data2> <data3><CR>
 
-;data isillegal.
+MMODFY:
+SET:
+        PUSH    HL
+        CALL    GETHL           ;Get data.
+        POP     HL
+        LD      (HL),A
+        JP      Z,CR3
+        INC     HL
+        JR      SET
 
-0321
+;**************************************************************
 
-0324
-0327
-CDDF08
+;Type the first address,followed by a period and a second
+;address .This two-address-separated-by-a-period form is
+;called a memory range.
+;If PRT_MPF exists ,then it will print out the data,
+;otherwise MPF_IP will ignore this command
+;The final fonnamd look like this:
+;<M>=<start>.<end><CR>   or
+;<M>=<start>.<end> <linking address><CR>
 
-22F8FEC9
-987
-988
-989
-990
-991
-992
-993
-CALL
+MDUMP:
+        CALL    PTEST
+        RET     NZ
+        LD      A,30H           ;Set memory dump type.
+        LD      (TEST5),A
+        CALL    MDUMP
+        RET
+        
+;**************************************************************
 
-LDRET
-CHKHEX(MADDR),HL
-Get the hexadecimal addressof the first of four memorylocationstobedisplayed,
+;You can treat a range of memory (specified by two address
+;separated by a slash),move it from one place to another
+;in memory by using the MOVE command.                  ---- page 18 ---- 
+;The final command look like this:
+;<M>=<start>:<end> <destination><CR>
 
-1045
-1046
-1047
-;Thefinalcommandlooklikethis:
-;<M>=<start>/<end><destination><CR>
+MMOVE:
+        LD      (STEPBF),HL     ;The starting address in HL.
+        CALL    GETHL           ;Get the ending address.
+        LD      (STEPBF+2),HL
+        CALL    GETHL           ;Get the destination address.
+        LD      (STEPBF+6),HL
+        CALL    GMV
+        JR      CR3
 
+;**************************************************************
 
+GVM:
+        LD      HL,STEPBF
+        CALL    GETP            ;Load parameters from
+                                ;step buffer into registers.
+                                ;Also check if the parameters
+                                ;are legal. After GETP,
+                                ;HL = start address of source
+                                ;BC = lenght to MOVE.
+        JP      C,ERROR         ;Jump to ERROR if the
+                                ;parameters are illegal.(i.e.,
+                                ;ending address < startting address.)
+        LD      DE,(STEPBF+4)   ;Load destination
+                                ;address into DE.
+        SBC     HL,DE           ;Compare HL and BC to
+                                ;determine to move up or down.
+        JR      NC,MVUP
+                                ;Move down
+        EX      DE,HL           ;HL = destination address.
+        ADD     HL,BC           ;HL = dest.address+length
+        DEC     HL              ;HL = end address of dest.
+        EX      DE,HL           ;DE = end address of dest.
+        LD      HL,(STEPBF+2)   ;HL = end address of source.
+        LDDR                    ;Block transfel instruction.
+        INC     DE              ;DE = last address moved.
+        RET
+MVUP:                           ;Move up
+        ADD     HL,DE           ;HL is changed by
+                                ;SBC HL,DE. Restore HL.
+        LDIR                    ;Block transfer
+        DEC     DE              ;DE = last address moved.
+        RET
+        
+;**************************************************************
 
+;To display four consecutive memory contents.
 
-
-
-
-
-
-
-
-
-
-
-
-1069	;ending-address<startingaddress.)
-
-
-.
-
-
-
-
-
-
-
-
-
-
-0382
-0384
-0385
-
-
-EDB0
-lBC9
-
-1086
-1087
-1088
-1089
-1090
-
-
-LDIR
-DEC	DERET
-
-;SBCHL,DE.RestoreHL.
-;Blocktranster
-;DE=lastaddressmoved.
-1091
-1092
-1093
-1094
-·,**************************************************************
-;Todisplayfourconsecutivememorycontents.
-
-1095
 MEM3:
+        LD      HL,(MADDR)
+        LD      B,4
+MEM5:
+        CALL    SPACE1          ;Insert a space.
+        LD      A,(HL)
+        CALL    HEX2
+        INC     HL              ;                      ---- page 19 ----
+        DJNZ    MEM5
+DECDSP:                         ;Clear the rightmost display
+                                ;pattern.
+                                ;in DISLPAY buffer,The display
+                                ;pattern is usually a cursor.
+        LD      IX,DISPBF
+DEC_SP  LD      A,0FFH
+        LD      HL,(DISP)
+        LD      (HL),A
+        INC     HL
+        LD      (HL),A
+        RET
+        
+;**************************************************************
 
-0386
-0389
-2AF8FE
-0604
-1096
-1097
-1098
+;Executed when UP or down arrow key is pressed.
+;Executed in memory mode only.
 
-MEMS:
-LO
-LD
-HL,(MADDR)
-B,4
-038B
-CD950A
-1099
-CALL
-SPACEl
-;Insertaspace.
-038E
-7E
-1100
-LD
-A,(HL)
+MFOR:                           ;Display next four memory
+                                ;contents.
+        LD      HL,(MADOR)
+        INC     HL
+        INC     HL
+        INC     HL
+        INC     HL
+P101    LD      (MADDR),HL
+        LD      A,'M'
+        CALL    ECHO_CH         ;Getpattern'<M>='
+        CALL    HEXX-
+        JP      P102
+MBACK:                          ;Display last four memory
+                                ;contents.
+        LD      HL,(MADDR)
+        DEC     HL
+        DEC     HL
+        DEC     HL
+        DEC     HL
+        JR      P101
 
-038F
-CD9A0A
-1101
-CALL
-HEX2
+;**************************************************************
 
-0392
-23
-1102
-INC
-HL
+;Executed when 'F' key is pressed.
+;Store the data byte into all memory locations from
+;add1 to addr2.
+;The final command look like this:
+;<F>=<addrl> <addr2> <data><CR>
 
-
-
-
-
-0393	10F6	1103
-
-DJNZ
-MEMS
-
-1104
-DECDSP:
-
-
-Cleartherightmostdisplay
-1105
-
-
-
-pattern.
-1106
-
-
-
-inDISPLAYBUFFER.Thedisplay
-1107
-0395	DD212CFF	1108
-0399	3EFF	1109
-
-DECSP
-LDLD
-IX,DISPBFA,0FFH
-patternisusuallya cursor.
-0398
-2A84FF
-1110
-LD
-HL,(DISP)
-039E
-77
-1111
-LD
-(HL),A
-039F
-23
-1112
-INC
-HL
-03A0
-77
-1113
-LD
-(HL),A
-03Al
-C9
-1114
-RET
-
-
-
-1115
-1116
-·,**************************************************************
-
-
-1117
-
-
-
-1118
-;ExecutedwhenUPordownarrowkeyispressed.
-
-
-1119
-;E·xecutedinmemorymodeonly.
-
-
-1120
-
-
-
-1121
-MFOR:	;Displaynextfourmemory
-
-
-1122
-;contents.
-03A2
-2AF8FE
-1123
-LD	HL,(MADOR)
-03A5
-23
-1124
-INC	HL
-03A6
-23
-1125
-INC	HL
-03A7
-23
-1126
-INC	HL
-03A8
-23
-1127
-INC	HL
-03A9
-22F8FE
-1128
-Pl01	LD	(MADDR),HL
-03AC
-3E4D
-1129
-LD	A,'M'
-03AE
-CD6008
-1130
-CALL	ECHOCH	;Getpattern'<M>='
-03B1
-CD890A
-1131
-CALL	HEXX-
-0384
-C30F03
-1132
-JP	Pl02
-
-
-1133
-MBACK:	;Displaylastfourmemory
-
-
-1134
-;contents.
-03B7
-2AF8FE
-1135
-LD	HL,(MADDR)
-03BA
-2B
-1136
-DEC	HL
-038B
-2B
-1137
-DEC	HL
-038C
-2B
-1138
-DEC	HL
-03BD
-2B
-1139
-DEC	HL
-03BE
-18E9
-1140
-JR	Pl01
-
-
-1141
-1142
-·,**************************************************************
-
-
-1143
-
-
-
-1144
-;Executedwhen'F'keyispressed.
-
-
-1145
-;Storethe databyteintoall memorylocationsfrom
-
-
-1146
-;addltoaddr2.
-
-
-1147
-;The finalcommandlooklike this:
-
-
-1148
-;F>=<addrl><addr2><data><CR>
-
-
-1149
-
-
-
-1150
 FILLDA:
-03C0
-CD1603
-1151
-CALL	MEMEX2	;Getstartingaddress.
-03C3
-CD1908
-1152
-CALL	RAMCHK
-03C6
-C2C406
-1153
-JP	NZ,ERROR	;JumptoERRORifthe
+        CALL    MEMEX2          ;Get starting address.
+        CALL    RAMCHK
+        JP      NZ,ERROR        ;Jump to ERROR if the
+                                ;memory location of the
+                                ;starting address is not RAM.
+        PUSH    HL
+        CALL    GETHL           ;Get endingaddress.
+        PUSH    HL
+        CALL    GETHL           ;Getdata.
+        LD      A,L             ;                   ---- page 20 ----
+        AND     A
+        POP     HL
+        POP     DE
+        LD      (DE),A
+        SBC     HL,DE
+        RET     Z
+        JP      C,ERROR         ;Jump to ERROR if starting
+                                ;address > ending address.
+        LD      B,H
+        LD      C,L
+        LD      H,D
+        LD      L,E
+        INC     DE
+        LDIR
+        JP      CR3
 
+;**************************************************************
 
-1154
-;memorylocationof the
-
-
-1155
-;startingaddressisnotRAM.
-03C9
-ES
-1156
-PUSH	HL
-03CA
-CDE508
-1157
-CALL	GETHL	;Get endingaddress.
-03CD
-ES
-1158
-PUSH	HL
-03CE
-CDE508
-1159
-CALL	GETHL	;Getdata.
-03D1
-7D
-1160
-LD	A,L
-
-
-
-
-03D2
-A7
-1161
-AND
-A
-
-03D3
-El
-1162
-POP
-HL
-
-03D4
-Dl
-1163
-POP
-DE
-
-03D5
-12
-1164
-LO
-(DE),A
-
-03D6
-ED52
-1165
-SBC
-HL,DE
-
-03D8
-C8
-1166
-RET
-z
-
-03D9
-DAC406
-1167
-JP
-C,ERROR
-;JumptoERRORifstarting
-
-
-li68
-
-
-;address>enoingaddress.
-03DC
-44
-1169
-LD
-B,H
-
-03DD
-4D
-1170
-LO
-C,L
-
-03DE
-62
-1171
-LO
-.H,D
-
-03DF
-6B
-1172
-LO
-L,E
-
-03E0
-13
-1173
-INC
-DE
-
-03El
-EDB0
-1174
-LDIR
-
-
-03E3
-C38509
-1175
-JP
-CR3
-
-
-
-1176
-
-
-
-
-
-1177
-·,**************************************************************
-
-
-1178
-
-
-
-1179
-;Exeutedwhen'I'keyispressed.
-
-
-1180
-;MPFIPwilldisplaythecurrentlimitaddress.
-
-
-1181
-;SYSTEMRAMdatathatofcoursecannotbeshifted
-
-
-1182
-;sowemustsetthelimitaddressofINSERTcommand.
-
-
-1183
-;Whenonebyteisinsertedatsomeaddress,all
-
-
-1184
-;databelowthisaddresswillbeshifteddownone
-
-
-1185
+;Exeuted when 'I' key is pressed.
+;MPF_IP will display the current limit address.
+;SYSTEM RAM data that of course cannot be shifted
+;so we must set the limit address of INSERT command.
+;When one byte is inserted at some address,all
+;data below this address will be shifted down one
 ;position.
+;The last location will be shifted out and therefore lost.
+
+; (1) Type <CR> -- To see the current limit address
+;                       of INSERT command.
+; (2) Type C    -- To clear limit address (i.e.,set
+;                       limit address to be 0FE00H).
+; (3) Enter the hexadecimal address -- To set new high
+;                       limit address of INSERT command.
+
+;When MPF_IP display <I>=
+; You can enter the hexadecimal address and values separated
+;                       by spaces -- To insert a block of data.
+;The final command look like this:
+;<!>=<address> <datal> <data2> <data3> <data4><CR>
 
 
-1186
-;Thelastlocationwillbeshiftedoutandthereforelost.
-
-
-1187
-
-
-
-1188
-(1)Type<CR>	To seethecurrentlimitaddress
-
-
-1189
-ofINSERTcommand.
-
-
-1190
-(2)TypeC	Toclearlimitaddress(i.e.,set
-
-
-1191
-limitaddresstobe0FE00H).
-
-
-1192
-(3)Enterthehexadecimaladdress--Toset newhigh
-
-
-1193
-limitaddressofINSERTcommand.
-
-
-1194
-
-
-
-1195
-;WhenMPFIPdisplay<I>=
-
-
-1196
-;Youcan-enterthehexadecimaladdressandvaluesseparated
-
-
-1197
-;	by spaces--Toinsertablockofdata.
-
-
-1198
-;Thefinalcommandlooklikethis:
-
-
-1199
-;<!>=<address><datal><data2><data3><data4><CR>
-
-
-1200
-
-
-
-1201
-
-
-
-1202
 INSET:
-03E6
-CD1504
-1203
-CALL	INSET4
-
-
-1204
+        CALL    INSET4
 INSET3:
-03E9
-22D0FE
-1205
-LO	(STEPBF),HL
-03EC
-23
-1206
-INC	HL
-03ED
-22D4FE
-1207
-LD	(STEPBF+4),HL
-03F0
-ED5BEBFE
-1208
-LO	DE,(ENDADDR)
-03F4
-lB
-1209
-DEC	DE	-
-03F5
-ED53D2FE
-1210
-LO	(STEPBF+2),DE
-03F9
-13
-1211
-INC	DE
-03FA
-A7
-1212
-AND	A
-03FB
-ED52
-1213
-SBC	HL,DE
-03FD
-D2C406
-1214
-JP	NC,ERROR
-0400
-CDE508
-1215
-CALL	GETHL
-0403
-F5
-1216
-PUSH	AF
+        LD      (STEPBF),HL
+        INC     HL
+        LD      (STEPBF+4),HL
+        LD      DE,(ENDADDR)
+        DEC     DE	-
+        LD      (STEPBF+2),DE
+        INC     DE
+        AND     A
+        SBC     HL,DE
+        JP      NC,ERROR
+        CALL    GETHL
+        PUSH    AF
 
-
-1217
-
-
-
-1218
-;RoutineGMVneeds3parameterswhicharestoredin
+;Routine GMV needs 3 parameters which are stored in    ---- page 21 ----
 
 
 
