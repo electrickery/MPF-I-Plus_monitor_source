@@ -1757,896 +1757,278 @@ SERCH   CP      (HL)        ;Compare with the first
         INC     C           ;Compare with the second
                             ;register name.
 
-LDCPLDJRLDADDLDLDADDLD
-
-A,C27HC,B
-NZ,SERCH3A,L
-A,8
-L,A
-A;c
-A,8
-C,A
-
-
-;CheckI	(A'	F'	B1C'D'E'H'L')
-
-
-
-
-
-
-
-
-
-,:66E	C9
-1790
-1791;
-RET
-;Zeroif illegal registernameexists.
-1792
-1793
-·I**************************************************************
-Function:RefertoREADLN.
-1794
-C--Get astringofcharacters.
-1795
-NC-- ResetthecontentofINPTR.
-1796
-
-266F
-DADA09
-1797GET:
-1798
-JP
-C,RDLOOP
-
-
-
-
-0672
-CDD409
-1799
-GETT
-CALL
-READLN
-0675
-CD9503
-1800
-
-CALL
-DECDSP
-0678
-C9
-1801
-
-RET
-
-1802
+        JR      Z,SERCH2
+        LD      A,D
+        JR      SEARCH4
+SERCH2:
+        LD      A,C
+        POP     BC
+        LD      B,A         
+        LD      A,C
+        CP      27H         ;Check ' (A' F' B' C' D' E' H' L')
+        LD      C,B
+        JR      NZ,SEARCH3
+        LD      A,L
+        ADD     A,8
+        LD      L,A
+        LD      A,C
+        ADD     A,8
+        LD      C,A
+SEARCH3:
+        LD      A,C
+SEARCH5 LD      (RCOUNT) ,A
+        LD      D,REGBF
+        ADD     A,E
+        LD      E,A
+        RET
+SEARCH1 INC     HL
+        INC     C
+SEARCH4 DJNZ    SEARCH
+        XOR     A
+        AND     A
+        POP     BC
+        RET                 ;Zero if illegal register name exists.
 ;
-
-
-1803
-·,**************************************************************
-
-
-1804
-;TAPEWRITE:
-
-
-1805
-
-
-
-1806
+;**************************************************************
+;   Function: Refer to READLN.
+;             C -- Get a string of characters.
+;            NC -- Reset the content of INPTR.
+;
+GET:
+        JP      C,RDLOOP      ;                        ---- page 31 ----
+GETT    CALL    READLN
+        CALL    DECDSP
+        RET
+;
+;**************************************************************
+; TAPE WRITE:
 DUMP:
-0679
-CD6008
-1807
-CALL	ECHOCH	;Echotheinputcharacter
 
-
-1808
-;with<W>=
-067C
-CD6.F06
-1809
-DUMPl	CALL	GET	;Get astringofcharacters
-
-
-1810
-;andendtheinputwith<CR>
-067F
-CDDF08
-1811
-CALL	CHKHEX	;Getstartingaddress.
-0682
-38F8
-1812
-JR	C,DUMPl	;JumptoDUMPliftheinput
-0684
-22D4FE
-1813
-1814
-
-LD
-;datumareillegal.
-(STEPBF+4),HL
-0687
-CDE508
-1815
-
-CALL
-GETHL
-;Getendingaddress.
-068A
-38F0
-1816
-
-JR
-C,DUMPl
-;JumptoDUMPliftheinput
-
-
-1817
-
-
-
-;datasareillegal.
-068C
-22D6FE
-1818
-
-LD
-(STEPBF+6),HL
-
-068F
-CDAE08
-1819
-DUMP2
-CALL
-GETCHR
-;Gettapefilename.
-0692
-11D0FE
-1820
-
-LD
-DE,STEPBF
-
-0695
-010400
-1821
-
-LD
-BC,4
-
-0698
-EDB0
-1822
-
-LDIR
-
-
-069A
-CD9F07
-1823
-CALL
-SUMl
-;Loadparameters from
-
-
-1824
-
-
-;stepbufferintoregisters
-
-
-1825
-
-
-;Checkiftheparameters
-
-
-1826
-
-
-;arelegal.Iflegal,calculate
-
-
-1827
-
-
-;thesumofalldatatobe
-
-
-1828
-
-
-;outputtotape.
-069D
-3825
-1829
-JR
-C,ERROR
-;BranchtoERRORifthe
-
-
-1830
-
-
-;parametersareillegal.(length
-
-
-1831
-
-
-;isnegative)
-069F
-32D8FE
-1832
-LD
-(STEPBF+8),A
-;Storetheckecksuminto
-
-
-1833
-
-
-;STEPBF+8.
-06A2
-21A00F
-1834
-LD
-HL,4000
-;OutputlKHzsquare
-
-
-1835
-
-
-;wavefor4000cycles.
-
-
-1836
-
-
-;Leadingsync signal.
-06A5
-CD6E08
-1837
-CALL
-TONElK
-
-06A8
-21D0FE
-1838
-LD
-HL,STEPBF
-;Output27bytesstarting
-
-
-1839
-
-
-;atSTEPBF.(Include:
-
-
-1840
-
-
-;filename,starting,ending
-
-
-1841
-
-
-;addressandchecksumandall
-
-
-1842
-
-
-;theparametersofEDITORand
-
-
-1843
-
-
-;ASSEMBLER.
-06AB
-011B00
-1844
-LD
-BC,27
-
-06AE
-CDBF07
-1845
-CA[.L
-TAPEOUT
-
-06Bl
-2lli:00F
-1846
-LD
-HL,4000
-;Output2KHzsquare
-
-
-1847
-
-
-;wavesfor4000cycles.
-
-
-1848
-
-
-;Middlesync.Thefilenameof
-
-
-1849
-
-
-;thefilebeingreadwillbe
-
-
-1850
-
-
-;displayedintheinterval.
-06B4
-CD7208
-1851
-CALL
-TONE2K
-
-06B7
-CDAC07
-1852
-CALL
-GETPTR
-;Loadparametersinto
-
-
-1853
-
-
-;registers(Starting,endingand
-
-
-1854
-
-
-;length).
-06BA
-CDBF07
-1855
-CALL
-TAPEOUT
-;Outputuser'sdata
-06BD
-21A00F
-1856
-LD
-HL,4000
-;Output4000cycles
-
-
-
-06C0
-06C3
-
-
-CD7208C9
-1857
-1858
-1859
-1860
-18_61;
-
-
-CALLRET
-
-
-TONE2K
-;of2KHzsquarewave.
-;(Tail sync.)
-
-
-
-
-
-
-
-
-06C4
-06C7
-
-
-
-
-
-
-
-
-21AF0CC38608
-1862
-1863
-1864
-1865
-1866
-1867
-1868
-1869
-1870
-1871
-1872
-1873
-1874
-1875
-1876
-1877
-1878
-·I*************************************************************
-Function: Print ERROR message.Input:None
-Output: Display patterns ' ERRORS' in display buffer.(OUTPTR)<-INPBF+8
-(DISP)	<-DISPBF+l6
-Reg affected: AF HLCall:PRTMES
-ERROR:
-LO	HL,ERRSMSG
-JP	PRTMES
+        CALL    ECHO CH         ;Echo the input character
+                                ;with <W>=
+DUMP1   CALL    GET             ;Get a string of characters
+                                ;and end the input with <CR>
+        CALL    CHKHEX          ;Get starting address.
+        JR      C,DUMP1         ;Jump to DUMP] if the input
+                                ;datum are illegal.
+        LD      (STEPBF+4) ,HL
+        CALL    GETHL           ;Get ending address.
+        JR      C,DUMP1         ;dump to DUMP1 if the input
+                                ;datas are illegal.
+        LD      (STEPBF+6) ,HL
+DUMP2   CALL    GETCHR          ;Get tape filename.
+        LD DE,  STEPBF
+        LD      BC,4
+        LDIR
+        CALL    SUM1            ;Load parameters from
+                                ;step buffer into registers
+                                ;Check if the parameters
+                                ;are legal. If legal,calculate
+                                ;the sum of all data to be
+                                ;output to tape.
+        JR      C,ERROR         ;Branch to ERROR if the
+                                ;Parameters are illegal. (length
+                                ;is negative)
+        LD      (STEPBF+8) ,A   ;Store the ckecksum into
+                                ;STEPBF+8.
+                                ;Output 1K Hz square
+                                ;wave for 490% cycles.
+                                ;Leading sync signal.
+        CALL    TONE1K
+        LD      HL,STEPBF       ;Output 27 bytes starting
+                                ;at STEPBF. (Include:
+                                ;filename ,Sstarting,ending
+                                ;address and checksum and all
+                                ;the parameters of EDITOR and
+                                ;ASSEMBLER.
+        LD      BC,27
+        CALL    TAPEOUT
+        LD      HL, 4906        ;Output 2K Hz square
+                                ;waves for 4868 cycles.
+                                ;Middle sync. The filename of
+                                ;the file being read will be
+                                ;displayed in the interval.
+        CALL    TONE2K
+        CALL    GETPTR          ;Load parameters into
+                                ;registers(Starting,ending and
+                                ;length).
+        CALL    TAPEOUT         ;Output user's data
+        LD      HL, 4906        ;Output 499@ cycles    ---- page 32 ----
+                                ;of 2K Hz square wave.
+                                ; (Tail sync.)
+        CALL    TONE2K
+        RET
 ;
-·I*************************************************************
-;Function:TAPEREAD.
+;**************************************************************
+; Function: Print ERROR message.
+; Input: None
+; Output: Display patterns ' ERRORS' in display buffer.
+; (OUTPTR) <~ INPBF+8
+; (DISP) <- DISPBF+16
+; Reg affected: AF HL .
+; Call: PRTMES
+
+ERROR:
+        LD      HL, ERRSMSG
+        JP      PRTMES
+;
+;**************************************************************
+; Function: TAPE READ .
+
 LOAD:
-
-06F5
-0604
-1915
-LD
-B,4
-GetfilenamefromDISPLAYBUFFER.
-
-
-1916
-
-
-Thefilenameisconsistedof4
-
-
-1917
-
-
-alphanumericcharacters.
-06F7
-213EFF
-1918
-
-LD
-HL,DISPBF+l8
-06FA
-2284FF
-1919
-
-LD
-(DISP),HL
-06FD
-21D0FE
-1920
-
-LD
-HL,STEPBF
-0700
-7E
-1921
-LOOP3
-LD
-A,(HL)
-0701
-CD2108
-1922
-
-CALL
-CONVER
-0704
-23
-1923
-
-INC
-HL
-0705
-10F9
-1924
-
-DJNZ
-LOOP3
-0707
-0664
-1925
-
-LD
-B,100	;Displayitfor1.57sec.
-0709
-CD9B02
-1926
-FILEDP:
-CALL
-SCANl
-070C
-10FB
-1927
-
-DJNZ
-FILEDP
-070E
-0604
-1928
-
-LD
-B,4	;Check·iftheinput
-
-
-1929
-
-
-;filenameequalstothe
-
-
-1930
-
-
-;specifiedfilenames.
-0710
-2B
-1931
-
-DEC
-HL
-0711
-ED5B82FF
-1932
-
-LD
-DE,(OUTPTR)
-0715
-1B
-1933
-
-DEC
-DE
-0716
-IA
-1934
-LOOP4
-LD
-A,(DE)
-0717
-BE
-1935
-
-CP
-(HL)
-0718
-2B
-1936
-
-DEC
-HL
-0719
-1B
-1937
-
-DEC
-DE
-071A
-20B4
-1938
-
-JR
-NZ,LEAD	;Ifnot,findtheleading
-
-
-1939
-
-
-;syncofnextfilename.
-071C
-10F8
-1940
-
-DJNZ
-LOOP4
-071E
-3E3F
-1941
-
-LD
-A,3FH	;Iffilenameisfound
-
-
-1942
-
-
-;thendisplay'
-0720
-D390
-1943
-
-OUT
-(SEGl),A
-0722
-3EFF
-1944
-
-LD
-A,0FFH
-0724
-D391
-1945
-
-OUT
-(SEG2),A
-0726
-CDAC07
-1946
-
-CALL
-GETPTR	;Theparameters(starting
-
-
-1947
-
-
-;endingaddressandchecksum)
-
-
-1948
-
-
-;havebeenloadintoSTEPBF.
-
-
-1949
-
-
-;Loadthemintoregisters,
-
-
-1950
-
-
-;calculatethe blocklength
-
-
-1951
-
-
-;andcheckiftheyarelegal.
-0729
-3899
-1952
-
-JR
-C,ERROR	;JumptoERRORifinput
-
-
-1953
-
-
-
-;isnotsuccessful.
-072B
-CD3B07
-i954
-CALL
-TAPEIN
-;Inputuser'sdata.
-072E
-3894
-1955
-JR
-C,ERROR
-
-0730
-CD9F07
-1956
-CALL
-SUMl
-;Calculatethesumofall
-0733
-?-1D8FE
-1957
-LD
-HL,STEPBF+8
-
-0736
-BE
-1958
-CP
-(HL)
-;Compareitwiththe
-
-
-1959
-
-
-;checksumcalculatedbyand
-
-
-1960
-
-
-;storedby'W'FUNCTION.
-0737
-C2C406
-1961
-JP
-NZ,ERROR
-;JumptoERRORif not
-
-
-1962
-
-
-;matched.
-073A
-C9
-·1963
-RET
-
-
-
-
-1964
-
-
-
-1965
-·I**************************************•***********************
-1966
+        CALL    ECHO CH         ;Echo the input character
+                                ;with <L>=
+        CALL    GET             ;Get a string of characters
+                                ;and end the input with <CR>.
+LEAD:   LD      A,16111111B     ;Decimal point.
+        OUT     (SEG2) ,A       ;When secrching for filename
+                                ;the display is blank intially.
+                                ;If the data read from MIC is
+                                ;acceptable @ or 1,the display
+                                ;becomes ' 
+        LD      A, OFFH
+        OUT     (SEG1),A
+        LD      HL,10690
+LEAD1:  CALL    PERIOD          ;The return of PERIOD
+                                ;is in flag:
+                                ; NC -- tape input is 1K Hz
+                                ; C  -- otherwise
+        JR      C, LEAD         ;Load until leading sync.
+                                ;is detected.
+        DEC     HL              ;Decrease HL by one when
+                                ;one period is detected.
+        LD      A,H
+        OR      L               ;Check if both H and L are zero.
+        JR      NZ,LEAD1        ;Wait for 19606 periods.
+                                ;The leading sync is accepted
+                                ;if it is longer than 1000
+                                ;cycles (1 second).
+LEAD2:  CALL    PERIOD
+        JR      NC, LEAD2       ;Wait all leading sync to
+                                ;Pass over.
+        LD      HL, STEPBF      ;Load 27 bytes from
+                                ;tape into STEPBF.
+        LD      BC,27
+        CALL    TAPEIN
+        JR      C,LEAD          ;Jump to LEAD if input
+                                ;is not sucessful.    ----- page 33 ----
+        LD      B,4             ;Get filename from DISPLAY BUFFER.
+                                ;The filename is consisted of 4
+                                ;alphanumeric characters.
+        LD      HL,DISPBF+18
+        LD      (DISP) ,HL
+        LD      HL,STEPBF
+LOOP3   LD      A, (HL)
+        CALL    CONVER
+        INC     HL
+        DINZ    LOOP3
+        LD      B,196           ;Display it for 1.57 sec.
+FILEDP: CALL    SCANL
+        DJNZ FILEDP
+        LD      B,4             ;Check if the input
+                                ;filename equals to the
+                                ;specified filenames.
+        DEC     HL
+        LD      DE, (OUTPTR)
+        DEC     DE
+LOOP4   LD      A, (DE)
+        CP      (HL)
+        DEC     HL
+        DEC     DE
+        JR      NZ,LEAD         ;If not,find the leading
+                                ;Sync of next filename.
+        DJNZ    LOOP4
+        LD      A,3FH           ;If filename is found
+                                ;then display '
+        OUT     (SEG1),A
+        LD      A, @FFH
+        OUT     (SEG2) ,A
+        CALL    GETPTR          ;The parameters (starting
+                                ;ending address and checksum)
+                                ;have been load into STEPBF.
+                                ;Load them into registers,
+                                ;Calculate the block length
+                                ;and check if they are legal.
+        JR      C,ERROR         ;Jump to ERROR if input
+                                ;is not successful.
+        CALL    TAPEIN          ;Input user's data.
+        JR      C,ERROR
+        CALL    SUM1            ;Calculate the sum of all
+        LD      HL, STEPBF+8
+        CP      (HL)            ;Compare it with the
+                                ;checksum calculated by and
+                                ;Stored by 'W' FUNCTION.
+        JP      NZ,ERROR        ;Jump to ERROR if not
+                                ;matched,
+        RET
+
+;**************************************************************
 TAPEIN:
-1967
-Loadamemoryqlockfromtape.
-1968
-Input:HL--startingaddressoftheblock
-1969
-BC--lengthoftheblock
-1970
-Output:Carryflag,!--readingerror
-1971
-0--noerror
-1972
-Destroyedreg.--AF,BC,DE,HL,AF',BC',DE',HL'
-
-
-
-
-1973
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-0748	CD5907
-074B	1608
-074D	CD5907
-
-1982
-1983
-B84
-1985
-1986
-1987
-1988
-1989
-1990
-1991
-1992
-1993
-1994
-1995
-1996
+; Load a memory block from tape.
+; Input: HL -- starting address of the block
+;       BC -- length of the block
+; Output: Carry flag,1 -- reading error
+;                    0 -- no error
+; Destroyed reg. -- AF,BC,DE,HL,AF',BC',DE',HL'        ---- page 34 ----
+        XOR     A               ;Clear carry flag.
+        EX      AF,AF'
+TLOOP:  CALL    GETBYTE         ;Get one byte from TAPE.
+        LD      (HL) ,E         ;Store it into memory.
+        CPI
+        JP      PE,TLOOP        ;Loop until length is zero.
+        EX      AF,AF'
+        RET
 
 GETBYTE:
-Read one byte from tape.Output:E--dataread
-CarryofF',l--readingerror
-0 -- no errorDestroyreg.--AF,DE,AF',BC',DE',HL'Byteformat:
+; Read one byte from tape.
+; Output: E -- data read
+; Carry of F',1 -- reading error
+; @ -~ no error
+; Destroy reg. -- AF,DE,AF',BC',DE',HL'
+; Byte format:
 
-startbitbitbitbitbitbitbitbitstopbit	0	1	2	3	4	5	6	7	bit
-CALL	GETBIT	;Getstartbit.
-LO	D,8	;Loop8times.
-BLOOP:CALL	GETBIT	;Getonedatabit
-;resultincarryflag.
-;RotateitintoE
+; start bit bit bit bit bit bit bit bit stop
+;  bit   0   1   2   3   4   5   6   7   bit
 
-;Getstopbit.
-0758	C9
-
-
-
-
-
-
-
-
-
-0759	D9
-2001
-2002
-2003
-2004
-2005
-2006
-2007
-2008
-2009
-2010
-2011
-2012
-2013
-RET
+        CALL    GETBIT          ;Get start bit.
+        LD      D,8             ;Loop 8 times.
+BLOOP:  CALL    GETBIT          ;Get one data bit
+                                ;result in carry flag.
+        RR      E               ;Rotate it into E .
+        DEC     D
+        JR      NZ,BLOOP
+        CALL    GETBIT          ;Get stop bit .
+        RET
 GETBIT:
-Readonebitfromtape.
-Output:Carryof F,0	thisbit is0
-1	thisbitis1CarryofF',l	readingerror
-0	noerrorDestroyed reg. -- AF,AF',BC',DE',HL'Bitformat:
+; Read one bit from tape.
+; Output: Carry of F,0 -- this bit is 0
+;                    1 -- this bit is 1
+;        Carry of F',1 -- reading error
+;                    0 -- no error
+; Destroyed reg. -- AF,AF',BC',DE',HL'
+; Bit format:
 
-0--2KHz8cycles+lKHz2cycles.1--2KHz4cycles+lKHz4cycles.
-EXX
+; @ -- 2K Hz 8 cycles + 1K Hz 2 cycles.
+; 1 -- 2K Hz 4 cycles + 1K Hz 4 cycles.
+        EXX
 
+; The tape~bit format of both @ and 1 are
+; of the same form: high freq part + low freq part.
+; The difference between @ and 1 is the
+; number high freq cycles and low freg
+; cycles. Thus, a high freq period may has
+; two meanings:
+; ##i) It is used to count the number of high
+; freq cycles of the current tape-bit;
+; ii) If a high freq period is detected
+; immediately after a low freq period, then
+; this period is the first cycle of next
+; tape-bit and is used as a terminator of the
+; last tape-bit.
 
+; Bit 0 of H register is used to indicate the usage
+; of a high freq period. If this bit is zero, high     ---- page 35 ----
 
-
-
-
-
-
-
-
-
-2029
-2030
-Bit 0 of H register is used to indicate the usageofahighfreqperiod.Ifthisbitiszero,high
-
-
-
-
-
-
-2031
-freqperiodcausescounterincrementforthecurrent
-
-2032
-tape-bit.Ifthehighfreqpart haspassed,bit0
-
-2033
-ofHissetandihenexthighfreqperiodwillbeused
-
-2034
-asaterminator.
-
-2035
-Lregisterisusedtoup/downcountthenumberofperiods.
-
-2036
-whenahighfreqperiodisread,·Lis	increasedby
-
-2037
-l;when alowfreqperiodisread,Lisdecreased
-
-2038
-by2.(Thetimedurationforeachcountis0.5ms.)
 
 2039
 Attheendofatape-bit, positiveandnegativeL
