@@ -2028,4123 +2028,758 @@ GETBIT:
 
 ; Bit 0 of H register is used to indicate the usage
 ; of a high freq period. If this bit is zero, high     ---- page 35 ----
-
-
-2039
-Attheendofatape-bit, positiveandnegativeL
-
-2040
-standfor0andlrespectively.
-
-2041
-
-075A
-210000
-2042
-LD	HL,00
-075D
-CD7A07
-2043
-COUNT!:CALL	PERIOD	;Readoneperiod.
-0760
-14
-2044
-INC	D	;Thenexttwoinstruc.tions
-
-
-2045
-;checkifDiszero.Carryflag
-
-
-2046
-;isnot affected.
-0761
-15
-2047
-DEC
-D
-0762
-2011
-2048
-
-JR
-NZ,TERR
-;IfDisnotzero,jump
-
-
-2049
-
-
-
-;toerrorroutineTERR.
-
-
-2050
-
-
-
-;(Becausetheperiodistoo
-
-
-2051
-
-
-
-;muchlongerthanthatoflKHz).
-0764
-3806
-2052
-
-JR
-C,SHORTP
-;Ifthe periodisshort
-
-
-2053
-
-
-
-;(2KHz),jumptoSHORTP.
-0766
-2D
-2054
-
-DEC
-L
-;TheperiodislKHz,
-
-
-2055
-
-
-
-;decreaseLby2•Andset
-
-
-2056
-
-
-
-;bit0 ofHtoindicatethis
-
-
-2057
-
-
-
-;tape-bithaspassedhighfreq
-
-
-2058
-
-
-
-;partandreachesits·lowfreq
-
-
-2059
-
-
-
-;part.
-,0767
-2D
-2060
-
-DEC
-L
-
-0768
-CBC4
-2061
-
-SET
-0,H
-
-076A
-18Fl
-2062
-
-JR
-COUNTl
-
-076C
-2C
-2063
-SHORTP:
-INC
-L
-;Theperiodis 2KHz,
-
-
-2064
-
-
-
-;increaseL by1.
-076D
-CB44
-;1065
-
-BIT
-0,H
-;Ifthetapebithaspassed
-
-
-2066
-
-
-
-;itshighfreqparthigh
-
-
-2067
-
-
-
-;frequencymeansthisbitisall
-
-
-2068
-
-
-
-;overandnextbithasstarted.
-076F
-?SEC
-2069
-
-JR
-Z,COUNTl
-
-
-
-2070
-
-
-;L=(#of
-2Kperiod)-2*(#oflKperiod)
-0771
-CB15
-2071
-
-RL
-L
-
-
-
-2072
-
-
-
-0--NCarry(Lpositive)
-
-
-2073
-
-
-;
-1---Catry(Lnegative)
-2074
-;Thepositive ornegativesign of
-2075
-;Lcorrespondstothetape-bitdata.
-2076
-;'RLL'willshiftthesignbitof
-2077
-;Lintocarryflag.Afterthis
-2078
-;instruction,thecarryflag
-
-
-2079
-
-
-;containsthetape-bit.
-0773
-D9
-2080
-
-EXX
-
-;RestoreBC'DE'HL'
-0774
-C9
-2081
-
-RET
-
-
-0775
-08
-2082
-TERR:
-EX
-AF,AF'
-
-vf776
-37
-2083
-
-SCF
-
-;SetcarryflagofF'toindicateerror.
-0777
-08
-2084
-
-EX
-AF,AF'
-
-0778
-D9
-2085
-
-EXX
-
-
-0779
-C9
-2086
-
-RET
-
-
-
-
-2087
+; freq period causes counter increment for the current
+; tape-bit. If the high freq part has passed, bit @
+; of H is set and the next high freq period will be used
+; as a terminator.
+; L register is used to up/down count the number of periods.
+; when'a high freq period is read, L is increased by
+; 1; when a low freq period is read, L is decreased
+; by 2. (The time duration for each count is 8.5 ms.)
+; At the end of a tape-bit, positive and negative L
+; stand for 8 and 1 respectively.
+
+        LD      HL, 08
+COUNT1: CALL    PERIOD          ;Read one period.
+        INC     D               ;The next two instructions
+                                ;check if D is zero. Carry flag
+                                ;is not affected.
+        DEC     D
+        JR      NZ, TERR        ;If D is not zero,jump
+                                ;to error routine TERR .
+                                ; (Because the period is too
+                                ;much longer than that of 1K Hz).
+        JR      C,SHORTP        ;If the period is short
+                                ;(2K Hz),jump to SHORTP.
+        DEC     L               ;The period is 1K Hz,
+                                ;decrease L by 2 . And set
+                                ;bit @ of H to indicate this
+                                ;tape-bit has passed high freq
+                                ;part and reaches its’ low freq
+                                ;part.
+        DEC     L
+        SET     0,H
+        JR      COUNTL
+SHORTP: INC     L               ;The period is 2K Hz ,
+                                ;increase L by l.
+        BIT     0,H             ;1f the tape bit has passed
+                                ;its high freq part, high
+                                ;frequency means this bit is all
+                                ;over and next bit has started.
+        JR      Z,COUNT1
+                                ;L= (# of 2K period) ~ 2*(# of 1K period)
+        RL      L 
+                                ; @ -~~ NCarry (L positive)
+                                ; 1 --~ Carry (L negative)
+                                ;The positive or negative sign of
+                                ;L. corresponds to the tape-bit data.
+                                ;"RL L' will shift the sign bit of
+                                ;L into carry flag. After this
+                                ;instruction, the carry flag
+                                ;contains the tape-bit.
+        EXX                     ;Restore BC' DE’ HL‘
+        RET
+TERR:   EX      AF,AF'
+        SCF                     ;Set carry flag of F' to indicate error.
+        EX      AF,AF'
+        EXX
+        RET
 PERIOD:
+; Wait the tape to pass one period.                    ---- page 36 ----
+; The time duration is stored in DE. The
+; unit is loop count. We use 32 as the
+; threshold for 2K Hz and 1K Hz.
+; result is in carry flag. (1K -~ NC, 2K -~ C)
+; Register AF and DE are destroyed.
 
-
-
-2088;Waitthetapetopassoneperiod.
-
-
-
-
-
-
-
-MPFIP
-1983.1.1
-PAGE37
-LDC
-OBJCODE
-M
-STMT
-SOURCESTATEMENT
-
-ASM5.9
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-0795
-20F9
-2110
-
-JR
-NZ,LOOPL
-;Loopuntilinputgoeshigh.
-0797
-3EFF
-2111
-
-LD
-A,111111118
-;Echothetapeinputto
-
-
-2112
-
-
-
-;speakeronMPFIP.
-0799
-D392
-2113
-
-OUT
-(KIN),A
-
-079B
-7B
-2114
-
-LD
-A,E
-
-079C
-FE20
-2115
-
-CP
-MPERIOD
-;Comparetheresultwith
-
-
-2116
-
-
-
-;thethreshold.
-079E
-C9
-2117
-
-RET
-
-
-
-
-2118
+        LD      DE, 00
+LOOPH:  IN      A, (KIN)        ;Bit 3 of port C is Tapein.
+        INC     DE
+        BIT     3,A
+        JR      Z,LOOPH         ;Loop until input goes low.
+        LD      A,11011111B     ;Echo the tape input to
+                                ;Speaker on MPF IP.
+        OUT     (KIN) ,A
+        LD      A, 0FGH
+        OUT     (DIG2) ,A
+        LD      A, OFFH
+        OUT     (DIG1),A
+LOOPL:  IN      A, (KIN)
+        INC     DE
+        BIT     3,A
+        JR      NZ ,LOOPL ;Loop until input goes high.
+        LD      A,11111111B     ;Echo the tape input to
+                                ;Speaker on MPF_IP.
+        OUT     (KIN) ,A
+        LD      A,E
+        CP      MPERIOD         ;Compare the result with
+                                ;the threshold,
+        RET
 ;
+;**************************************************************
+SUM1:
+; Calculate the sum of the data in a memory
+; block. The starting and ending address
+; of this block are stored in STEPBF+2 ~ STEPBF+4,
+;   Registers AF,BC,DE,HL are destroyed.
 
-
-
-
-
-2119
-·,**************************************************************
-
-
-2120
-SUM!:
-
-
-2121
-Calculatethesum ofthe datainamemory
-
-
-2122
-block.Thestartingandendingaddress
-
-
-2123
-ofthisblockarestoredinSTEPBF+2-STEPBF+4.
-
-
-2124
-RegistersAF,BC,DE,HLaredestroyed.
-
-
-2125
-
-079F
-CDAC07
-2126
-CALL	GETPTR	;Getparametersfrom
-
-
-2127
-;stepbuffer.
-07A2
-D8
-2128
-RET	C	;Returnifthe parameters
-
-
-2129
-;areillegal.
-
-
-2130
+        CALL GETPTR             ;Get parameters from
+                                ;step buffer.
+        RET     C               ;Return if the parameters
+                                ;are illegal.
 SUM:
+; Calculate the sum of a memory block.
+; HL contains the starting address of
+; this block, BC contains the length.
+; The result is stored in A. Registers
+; AF,BC,HL are destroyed.
 
-
-2131
-Calculatethesumofamemoryblock.
-
-
-2132
-HLcontainsthestartingaddressof
-
-
-2133
-thisblock,BCcontainsthelength.
-
-
-2134
-TheresultisstoredinA.Registers
-
-
-2135
-AF,BC,HLaredestroyed.
-
-
-2136
-
-07A3
-AF
-2137
-XOR
-A
-;ClearA
-07A4
-86
-2138
-SUMCAL:ADD
-A,(HL)
-
-07A5
-EDAl
-2139
-
-CPI
-
-
-07A7
-EAA407
-2140
-
-JP
-PE,SUMCAL
-
-07AA
-B7
-2141
-
-OR
-A
-;Clearflag.
-07AB
-C9
-2142
-
-RET
-
-
-
-
-2143
+        XOR     A               ;Clear A
+SUMCAL: ADD     A, (HL)
+        CPI
+        JP      PE,SUMCAL
+        OR      A               ;Clear flag.
+        RET
 GETPTR:
-
-
-
-2144
-Getparametersfromstepbuffer.
-2145
-Input:(STEPBF+4)and(STEPBF+S)contain
-2146
-startingaddress.
-LOC
-OBJCODEMSTMTSOURCESTATEMENT
-ASM5.9
-
-
-2147
-(STEPBF+6)and(STEPBF+7)contain
-
-2148
-endingaddress.
-
-2149
-Output:HLregistercontainsthestarting
-
-2150
-address.
-
-2151
-BCregistercontainsthelength.
-
-2152
-Carryflay0.--BCpositive
-
-2153
-1--BCnegative
-
-2154
-Destroyedreg.:AF,BC,DE,HL.
-
-2155
-
-07AC
-21D4FE
-2156
-LD	HL,STEPBF+4
-07AF
-5E
-2157
-GETP
-LD
-E,(HL)
-;Load
-thestartingaddress
-
-
-2158
-
-
-
-;into
-DE •
-07B0
-23
-2159
-
-INC
-HL
-
-
-07Bl
-56
-2160
-
-LD
-D,(HL)
-
-
-07B2
-23
-2161
-
-INC
-HL
-
-
-07B3
-4E
-2162
-
-LD
-C,(HL)
-
-
-07B4
-23
-2163
-
-INC
-HL
-
-
-07B5
-66
-2164
-
-LD
-H,(HL)
-;Load
-endingaddress
-
-
-2165
-
-
-
-;into
-HL.
-07B6
-69
-2166
-
-LD
-L,C
-
-
-07B7
-B7
-2167
-OR
-A
-;Clearcarryflag.
-07B8
-ED52
-2168
-SBC
-HL,DE
-;Finddifference.
-
-
-2169
-
-
-;Carryflagischangedhere.
-07BA
-4D
-2170
-LD
-C,L
-
-07BB
-44
-2171
-LD
-B,H
-
-07BC
-03
-2172
-INC
-BC
-;NowBCcontainsthe
-
-
-2173
-
-
-;length.
-07BD
-EB
-2174
-EX
-DE,HL
-;NowHLcontainsthe
-
-
-2175
-
-
-;startingaddress.
-07BE
-C9
-2176
-RET
-
-
-
-
-2177
-
-
-
-
-
-2178
-;*********•****************************************************
-
-
-2179
+; Get parameters from step buffer.
+; Input: (STEPBF+4) and (STEPBF+5) contain
+;        starting address.                             ---- page 37 ----
+; (STEPBF+6) and (STEPBF+7) contain
+; ending address.
+; Output: HL register contains the starting
+; address,
+;BC register contains the length.
+; Carry flay @ -~ BC positive
+; 1 -~ BC negative
+; Destroyed reg.: AF,BC,DE,HL.
+
+        LD      HL,STEPBF+4
+        GETP    LD E, (HL)      ;Load the starting address
+                                ;into DE .
+        INC     HL
+        LD      D, (HL)
+        INC     HL
+        LD      C, (HL)
+        INC     HL
+        LD      H, (HL)         ;Load ending address
+                                ;into HL.
+        LD      L,C
+        OR      A               ;Clear carry flag.
+        SBC     HL,DE           ;Find difference.
+                                ;Carry flag is changed here.
+        LD      C,L
+        LD      B,H
+        INC     BC              ;Now BC contains the
+                                ;length.
+        EX      DE,HL           ;Now HL contains the
+                                ;Starting address.
+        RET
+
+;**************************************************************
 TAPEOUT:
+; Output a memory block to tape.
+; Input: HL -- starting address of the block
+;        BC -- length of the block
+; Destroyed reg. -- AF,BC,DE,HL,BC',DE',HL'
 
-
-2180
-Outputamemoryblocktotape.
-
-
-2181
-Input:HL--startingaddress oftheblock
-
-
-2182
-BC--lengthoftheblock
-
-
-2183
-Destroyedreg.--AF,BC,DE,HL,BC',DE',HL'
-
-
-2184
-
-07BF
-SE
-2185
-LD	E,(HL)	;Getthedata.
-07C0
-CDC907
-2186
-CALL	OUTBYTE	;Outputtotape.
-07C3
-EDAl
-2187
-CPI
-07C5
-EABF07
-2188
-JP	PE,TAPEOUT	;Loopuntilfinished.
-07C8
-C9
-2189
-RET
-
-
-2190
+        LD      E, (HL)         ;Get the data.
+        CALL    OUTBYTE         ;Output to tape.
+        CPI
+        JP      PE, TAPEOUT     ;Loop until finished.
+        RET
 OUTBYTE:
+; Output one byte to tape. For tape-byte
+; format, see comments on GETBYTE.
+; Input: E ~- data
+; Destroyed reg. ~~ AF,DE,BC',DE',HL'
 
-
-2191
-Outputonebytetotape.Fortape-byte
-
-
-2192
-format,seecommentsonGETBYTE.
-
-
-2193
-Input:E--data
-
-
-2194
-Destroyedreg.--AF,DE,BC',DE',HL'
-
-
-2195
-
-07C9
-1608
-2196
-LD	D,8	;Loop8times.
-07CB
-B7
-2197
-OR	A	;Clearcarryflag.
-07CC
-CDDC07
-2198
-CALL	.OUTBIT	;Outputstartbit.
-07CF
-CBlB
-2199
-OLOOP:RR	E	;Rotatedataintocarry.
-07Dl
-CDDC07
-2200
-CALL	OUTBIT	;Outputthe carry.
-07D4
-15
-2201
-DEC	D
-07D5
-2.0F8
-2202
-JR	NZ,OLOOP
-07D7
-37
-2203
-SCF	;Setcarryflag.
-07D8
-CDDC07
-2204
-CALL	OUTBIT	;Outputstopbit.
-LOC
-OBJCODEMSTMTSOURCESTATEMENT
-ASM5,9
-
-
-
-
-
-07DC
-D9
-2210
+        LD      D,8             ;Loop 8 times.
+        OR      A               ;Clear carry flag.
+        CALL    OUTBIT          ;Output start bit.
+OLOOP:  RR      E               ;Rotate data into carry.
+        CALL    OUTBIT          ;Output the carry.
+        DEC     D
+        JR      NZ,OLOOP
+        CF                      ;Set carry flag.
+        CALL OUTBIT             ;Output stop bit.      ---- page 38 ----
+        RET
+2296 OUTBIT:
+; Output one bit to tape.
+; Input: data in carry flag.
+; Destroyed reg. -~ AF,BC',DE',HL'
 EXX
-07.DD
-2600
-2211
-LD
-H,0
-07DF
-3809
-2212
-
-JR
-C,OUTl
-;Ifdata
-l,output1•
-07El
-2E08
-2213
-OUT0:
-LD
-L,ZERO2K
-
-
-07E3
-CD7208
-2214
-
-CALL
-TONE2K­
-
-
-07E6
-2E02
-2215
-
-LD
-L,ZEROlK
-
-
-07EB
-1807
-2216
-2217
-
-OUTl:
-JR
-BITEND-
-
-;2K4cycles,lK4cycles
-07EA
-2E04
-2218
-LD
-L,ONE2K
-
-07EC
-CD7208
-2219
-CALL
-TONE2K
-
-07EF
-2E04
-2220
-LD
-L,ONElK
-
-07Fl
-CD6E08
-2221
-BITEND:CALL
-TONElK
-
-07F4
-D9
-2222
-EXX
-
-;Restoreegisters.
-07F5
-C9
-2223
-RET
-
-
-2224
-2225
-2226
-2227
-2228
-2229
-2230
-2231
-2232
-2233
-2234
-2235
-;'**************************************************************
-Function:Cleardisplaybufferanddispliyprompt.Input:None
-Output:(OUTPTR)<-INPBF
-(DISP)	<-DISPBF
-IX<-DISPBF
-Setallthecontents ofdisplaybuffertobeFF.
-Regaffected:AFIXCall:CLEARCHRWR.
+        LD      H,@
+        JR      C,OUTL          ;If data = 1 ,outputl.
+OUT1:   LD      L,ZERO_ 2K
+        CALL    TONE2K
+        LD      L,ZERO 1K
+        JR      BITEND
+OUTIL:                          ;2K 4 cycles ,1K 4 cycles
+        LD      L,ONE 2K
+        CALL    TONE2K
+        LD      L,ONE 1K 
+BITEND: CALL    TONEILK
+        EXX                     ;Restore registers.
+        RET
+;
+;**************************************************************
+; Function: Clear display buffer and display prompt.
+; Input: None
+; Output: (OUTPTR) <- INPBF
+;         (DISP)   <- DISPBF
+;               IX <- DISPBF
+;         Set all the contents of display buffer to be FF .
+; Reg affected: AF IX.
+; Call: CLEAR CHRWR . 
 
 CLRBF:
-07F6
-07F9
-07FB
-07FE
-0802
-CDB9093E3CCD2409DD212CFFC9
-2236
-2237
-2238
-2239
-2240
-2241'
-CALLLDCALLLDRET
-CLEARA,3CHCHRWRIX,DISPBF
-2242
-2243
-2244
-2245
-·**************************************************************
-Function:Generateasound.Input:None
-Output:None
-
-
-
-
-
-
-
-
-
-
-0819	7E
-081A	2F
-081B	77
-081C	7E
-0810	2F
-081E	77
-081F	BE
-0820	C9
-2263
-2264
-2265
-2266
-2267
-2268
-2269
-2270
-2271
-2272
-2273
-2274
-2275
-2276
-2277
-2278
-2279
-2280
-2281
-2282
-2283
-2284
-2285
-2286
-2287
-2288
+        CALL    CLEAR
+        LD      A,3CH 
+        CALL    CHRWR
+        LD      IX,DISPBF
+        RET
 ;
-·I**************************************************************
-Function:checkifa memoryaddressisinRAM.
-Input:HL--addresstobe check.
-Output:Zeroflag--0,ROMornonexistant;
-1,RAM.
-Destroyedreg.:AF.Call:none
+;**************************************************************
+; Function: Generate a sound.
+; Input:None
+; Output: None
+; Reg affected: AF BC DE HL. ,
+; Call: TONE
+
+BEEP: PUSH AF
+        LD      HL, BEEPSET
+        LD      A, (HL)
+        AND     A
+        JR      NZ ,NOTONE
+        INC     HL
+        LD      C, (HL)
+        LD      HL, (TBEEP)
+        CALL    TONE
+        OR      20H             ;LED off.
+        OUT     (KIN) ,A
+NOTONE:
+        POP     AF
+        RET                     ;                      ---- page 39 ----
+;
+;**************************************************************
+; Function: check if a memory address is in RAM.
+; Input: HL -~ address to be check.
+; Output: Zero flag -~ 8, ROM or nonexistant;
+; 1, RAM.
+; Destroyed reg.: AF.
+; Call: none
 
 RAMCHK:
-LD	A,(HL)CPL
-LD	(HL),A
-LD	A,(HL)CPL
-LO	(HL),A
-CP	(HL)RET
+        LD      A, (HL)
+        CPL
+        LD      (HL) ,A
+        LD      A, (HL)
+        CPL
+        LD      (HL) ,A
+        CP      (HL)
+        RET
 ;
-·,**************************************************************
-Function:Convertabyte(ASCIIcode)inAregistertodisplaypattern.
-Input:A--ASCIIcode.
-(DISP)--Pointtotheresultaddressin displaybuffer.
-Output:Patternfortwobytes.Thefirstbytein(DISP)andthesecondbytein(DISP)+l•
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-086E
-0870
-0872
-
-
-
-
-
-
-
-
-
-
-0E41
-1802
-0ElF
-
-2359
-2360
-2361
-2362
-2363
-2364
-2365
-2366
-2367
-2368
-2369
-2370
-2371
-2372
-2373
-2374
-
-,
-·,**************************************************************
-Function: Generate square wave to the MIC&speakeronMPFIP.
-Input:C--period;2*(44+13*C)clockstates.
-HL--numberofperiods.
-Output: none.
-Destroyedreg.:AF,B(C),DE,HL.Call:none.
-TONElK:
-LO	C,FlKHZ
-JR	TONE
-TONE2K:
-LO	C,F2KHZ
-TONE:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-086E
-0870
-0872
-
-
-
-
-
-
-
-
-
-
-0E41
-1802
-0ElF
-
-2359
-2360
-2361
-2362
-2363
-2364
-2365
-2366
-2367
-2368
-2369
-2370
-2371
-2372
-2373
-2374
-
-,
-·,**************************************************************
-Function: Generate square wave to the MIC&speakeronMPFIP.
-Input:C--period;2*(44+13*C)clockstates.
-HL--numberofperiods.
-Output: none.
-Destroyedreg.:AF,B(C),DE,HL.Call:none.
-TONElK:
-LO	C,FlKHZ
-JR	TONE
-TONE2K:
-LO	C,F2KHZ
-TONE:
-
-087C
-41
-2379
-LD
-B,C
-087D
-10FE
-2380
-DJNZ
-$
-087F
-EE20
-2381
-XOR
-20H	;TOGGJ:.,EOUTPUT
-0881
-ED52
-2382
-SBC
-HL,DE
-0883
-20F5
-2383
-JR
-NZ,SQWAVE
-0885	C9	2384
-2385
-RET
-,
-2386
 ;**************************************************************
-2387
-Function:Printmessageuntil<CR>met.
-2388
-Input:HL--Startingaddressofcharacters.
-2389
-Output:(OUTPTR)<-(OUTPTR)+?
-2390
-(DISP)	<-(DISP)+2*?
-2391
-?isthenumberofcharcterstobeprinted.
-2392
-2*? isfailsifthereexistsTABkeyininputbuffer.
-2393
-Regaffected:AFHL
-2394
-Call:CLEARMSGDECDSPCR2•
-2395
+; Function: Convert a byte (ASC II code) in A register
+;           to display pattern.
+; Input: A -- ASC II code.
+;       (DISP) -- Point to the result address in display buffer.
+; Output: Pattern for two bytes. The first byte in (DISP) and
+;         the second byte in (DISP)+1 .
+;         (DISP) <- (DISP)+2
+; Reg affected: AF
+; Call: None
 
+CONVER:
+        PUSH    BC
+        PUSH    DE
+        PUSH    HL
+        LD      HL, SEGTAB
+        LD      B,20H
+        SUB     B
+        ADD     A,A
+        LD      C,A
+        LD      B,0
+        ADD     HL,BC
+        LD      E, (HL)
+        INC     BL
+        LD      D, (HL)
+        LD      HL, (DISP)
+        LD      (HL) ,E
+        INC     HL
+        LD      (HL) ,D
+        INC     HL
+        LD      (DISP),HL
+        POP     HL
+        POP     DE
+        POP     BC
+        RET
+;
+;**************************************************************
+; Function: Clear the display buffer.
+; Input: None                                          ---- page 40 ----
+; Output: Set all contents in display buffer to be FF.
+; Reg effected: None
+; Call: None
 
+CLRDSP:
+        PUSH    HL
+        PUSH    DE
+        PUSH    BC
+        LD      HL, DISPBF
+        LD      DE,DISPBF+1
+        LD      BC, 80
+        LD      (HL) ,0FFH
+        LDIR
+        POP     BC
+        POP     DE
+        POP     HL
+        RET
+CHKINP:                         ;Check alli the datum in input
+                                ;buffer are hexadecimal values or not
+                                ;until <CR> met.
+                                ;Carry flag is set if there exists
+                                ;at least one non hexadecimal value.
+        CALL    CHKHEX
+        RET     C
+        RET     Z
+CHKINI  CALL    GETHL
+        RET     C
+        RET     Z
+        JR      CHKINI
+ECHO_CH:                        ;Echo the input character
+                                ;with <?>=
+                                ;is the input character.
+        CALL    CHRWR           ;?
+        LD      A,3EH           ;>
+        CALL    CHRWR
+        LD      A,3DH           ;=
+        CALL    CHRWR
+        RET
+;
+;**************************************************************
+; Function: Generate square wave to the MIC & speaker
+;           on MPF_IP.
+; Input :  C -- period = 2*(44+13*C) clock states,
+;         HL -- number of periods.
+; Output: none.
+; Destroyed reg.: AF, B(C), DE, HL.
+; Call: none.
 
-2396
+TONE1K:
+        LD      C,F1KHZ
+        JR      TONE
+TONE2K:
+        LD      C,F2KHZ
+TONE: 
+        ADD     HL,HL
+        LD      DE,1
+        LD      A, 0FFH
+SQWAVE: OUT     (KIN) ,A        ;                      ---- page 41 ----
+        LD      B,C
+        DJNZ    $
+        XOR     20H             ; TOGGLE OUTPUT
+        SBC     HL,DE
+        JR      NZ ,SOWAVE
+        RET
+;
+;**************************************************************
+; Function: Print message until <CR> met.
+; Input: HL -— Starting address of characters.
+; Output: (OUTPTR) <~ (OUTPTR)+?
+;         (DISP) <~ (DISP)+2*?
+;         ? is the number of charcters to be printed.
+;         2*? is fails if there exists TAB key in input buffer.
+; Reg affected: AF HL.
+; Call: CLEAR MSG DECDSP CR2 .
+
 PRTMES:
-
-0886
-CDB909
-2397
-
-CALL
-CLEAR
-0889
-CDCA09
-2398
-
-CALL
-MSG
-088C
-CD9503
-2399
-REG2
-CALL
-DECDSP
-088F
-CD8109
-2400
-
-CALL
-CR2
-0892
-C9
-2401
-
-RET
-
-
-
-2402
+        CALL    CLEAR
+        CALL    MSG
+REG2    CALL    DECDSP
+        CALL    CR2
+        RET
 ;
-
-
-
-
-
-2403
-·,*************************************************************
-
-
-
-2404
-Function:Printoutallthecontentsindisplaybuffer.
-
-
-
-2405
-Input:None
-
-
-
-2406
-Output:None
-
-
-
-2407
-Regaffected:AF
-
-
-
-2408
-Call:PTESTMTPPRT
-
-
-
-2409
-
-0893
-CDA308
-
-2410
-PRINTTCALL	PTEST
-0896
-C0
-
-2411
-RET	NZ
-0897
-DDE5
-
-2412
-PUSH	IX
-0899
-DD2104FF
-
-2413
-LD	IX,INPBF
-089D
-CD0000
-X
-2414
-CALL	MTPPRT	Refertoprintermanual.
-08A0
-DDEl
-
-2415
-POP·	IX
-08A2
-C9
-
-2416
-RET
-2417
-,
-2418
 ;**************************************************************
-2419
-Function:Checkthetoggleprinterswitchand
-2420
-theconditionofprinterinterface.
-2421
-Input:None
-2422
-Output:Zero
-flag=
-1
-(1)Printerexistsandtoggle
-2423
+; Function: Print out all the contents in display buffer.
+; Input: None
+; Output: None
+; Reg affected: AF
+; Call: PTEST MTPPRT .
 
+PRINTT  CALL    PTEST
+        RET     NZ
+        PUSH    IX
+        LD      IX, INPBF
+        CALL    MTPPRT          ; Refer to printer manual.
+        POP     IX
+        RET
+;
+;**************************************************************
+; Function: Check the toggle printer switch and
+;           the condition of printer interface,
+; Input: None
+; Output: Zero flag = 1     (1) Printer exists and toggle
+;                            switch is on.
 
+;         Zero flag = 0     (2) Printer exists but the
+;                            toggle switch is off.
+;                           (3) Printer not exists.
+; Reg affected: AF
+; Call:None
 
-switchison.
-2424
+PTEST:
+        LD      A, (PRTFLG)
+        AND     A
+        RET     NZ
+PTESTT:                         ; Check printer interface,
+                                ; Carry flag = 1 if printer exists. ---- page 42 ----
+        LD      A, (6988H)
+        CP      0CDH
+        RET
+;
+;**************************************************************
+; Function: Use (GETPT) as a pointer increase HL until
+;           (HL=1) is one of the following delimeters:
+;           SPACE TAB .: / = and (HL+1) is not SPACE
+;           or TAB.
+; Input: HL = (GETPT) -~ Starting address.
+; Output: HL <= HL+?
+;         (GETPT) <- (GETPT) +?
+; Reg affected: AF HL .
+; Call: None
 
-
-
-
-2425
-Zero
-flag
-0
-(2) Printerexistsbutthe
-2426
-
-
-
-toggleswitchis off.
-2427
-
-
-
-(3)Printernotexists.
-2428
-Regaffected:
-AF
-
-
-2429
-Call:None
-
-
-
-2430
-
-
-
-
-
-08A8
-08AB
-08AD
-3A0060FECD
-cg
-2437
-2438
-2439
-2440I
-LD	A,(6000H)
-CP	0CDHRET
-
-
-
-
-
-
-
-
-
-
-08AE
-
-
-
-
-
-
-
-
-
-
-2A7EFF
-2441
-2442
-2443
-2444
-2445
-2446
-2447
-2448
-2449
-2450
-2451
-2452
-2453
-2454
-·,**************************************************************
-Function: Use (GETPT) as a pointer increase HL until(HL-1)isoneofthefollowingdelimeters:
-SPACETAB•:/=	and(HL+l)isnotSPACEorTAB.
-Input: HL=(GETPT) -- Starting address.Output:HL<-HL+?
-(GETPT)<-(GETPT)+?
-Reg affected: AF HL.Call:None
 GETCHR:
-LD	HL,(GETPT)
+        LD      HL, (GETPT)
 LDA:
-0881
-0882
-0884
-0886
-0888
-08BA
-0888
-7EFE202804FE09200E
-23
-7E
-2455
-2456
-2457
-2458
-2459
-2460
-2461
-2462
-
-
-
-
+        LD      A, (HL)
+        CP      ' '             ;SPACE..
+        JR      Z,SKIP_
+        CP      09H             ; TAB.
+        JR      NZ ,EOS?
 SKIP:
-
-
-
-
-
-STPTR:
-LDCPJRCPJR
-
-INCLDCPJRCPJR
-A,(HL)
-I	I
-
-Z,SKIP_
-NZ,EOS?HL
-A,(HL)
-I	I
-Z,SKIP_Z,SKIP_
-
-;SPACE••
-;TAB.
-
-
-
-;SPACE.
-;TAB.
-
+        INC     HL
+        LD      A, (HL)
+        CP      ' '             ;SPACE.
+        JR      Z,SKIP_
+        CP      09H             ; TAB.
+        JR      Z,SKIP
+STPTR: 
+        LD      (GETPT) , HL
+        RET
 EOS?:
-LD	(GETPT),HLRET
-
-
-
-
-
-
-
-
-
-
+        CP      ODH             ;End of string?
+        JR      Z,STPTR         ;Yes
+        CP      3AH             ;:
+        JR      Z,SKIP_
+        CP      2EH             ;.
+        JR      Z,SKIP_
+        CP      3DH             ;=
+        JR      Z,SKIP_
+        CP      2FH             ;/
+        JR      Z,SKIP_
+        INC     HL
+        JR      LDA
 CHKHEX:
-CPJRCPJRCPJRCPJRCPJRINCJR
-0DHZ,STPTR3AHZ,SKIP2EH-Z,SKIP3DH-Z,SKIP2FH-Z,SKIPHL	-
-LDA
-;Endofstring?
-;Yes
-;.
-;=
-;/
-
+        LD HL, INPBF
 CHKHE2:
-,
-LD	HL,INPBF
-LD	(GETPT),HL
-·,**************************************************************
-Function:CallGETCHRandconvertASCIIcodestohexadecimalvaluesandstorethemintoHL.
-Input:(GETPT)
-Output:(GETPT)<-(GETPT)+?
-A<-L
-H=0	Ifthereisonlyone hexadecimaldigit.
-
-2495
-Carryflag=lIf
-thedataisnothexadecimaldigits.
-2496
-Zeroflag=1If
-thelastASCIIcodeis<CR>•
-2497
-Regaffected:AFDEHL
-
-2498
-Call:
-GETCHRONE•
-
-
-2499
-
-
-
-
-
-
-2500
-GETHL:
-
-
-;Get4digit numbertoHL&L=A
-
-
-2501
-
-
-
-;C(Nonhexadecimalvalues)
-
-
-2502
-
-
-
-;Z(0DH)
-08E5
-210000
-2503
-
-LD
-HL,0
-;Assumeinput0000
-08E8
-ES
-2504
-
-PUSH
-HL
-;Temporarystorein(SP),(SP+l)
-08E9
-39
-2505
-
-ADD
-HL,SP
-;HL=SP
-08EA
-EB
-2506
-
-EX
-DE,HL
-;BorrowSPfortemporybuffer.
-08EB
-CDAE08
-2507
-
-CALL
-GETCHR
-
-08EE
-EB
-2508
-
-EX
-DE,HL
-
-08EF
-FE30
-2509
-CV3
-CP
-'0'
-08Fl
-300A
-2510
-
-JR
-NC,CVT
-08F3
-FE0D
-2511
-
-CP
-0DH
-08F5
-2003
-2512
-
-JR
-NZ,CV2
-
-08F7
-El
-2513
-CVl
-POP
-HL
-
-08F8
-7D
-2514
-
-LD
-A,L
-;Stringend.
-08F9
-C9
-2515
-
-RET
-
-
-
-
-2516
-CV2:
-
-
-
-08FA
-A7
-2517
-AND
-A
-08FB	18FA	2518	JR
-CVl
-
-
-2519
-CVT:
-
-
-
-08FD
-FE3A
-2520
-CP
-3AH
-08FF
-28F9
-2521
-2522
-
-CVTHEX:
-JR
-z,cv2
-
-0901
-CD140B
-2523
-CALL
-ONE
-;ASCIItoHEX
-0904
-380A
-2524
-JR
-C,NOTHEX
-
-0906
-ED6F
-2525
-
-RLD
-
-;Rotateinto(HL)i.e.(SP)
-0908
-23
-2526.
-INC
-HL
-;SP+l
-0909
-090B
-090C
-090D
-090E
-0910
-0911
-ED6F2B
-13
-lA
-18DF
-
-ElC9
-2527
-2528
-2529
-2530
-2531
-2532
-2533
-2534
-2535
-
-
-
-
-NOTHEX:
-
-,
-RLDDECINCLDJR
-
-POPRET
-
-HLDE
-A,(DE)CV3
-HL
-
-
-
-
-;Error
-2536
-2537
-2538
-2539
-·,**************************************************************
-Function: Check the numbers of content in display buffer,ifitexcess40thechangethe IXpointer.
-Input:(DISP)
-2540
-2541
-Output:IX<-IX
-(Ifthe numberofcontentsarelessthan40).
-2542
-2543
-IX<-(DISP)-38(Ifthenumbersofcontentsarelagerthan40)•
-2544
-2545
-2546
-2547
-Carryflag=1Reg affected: AF DEHLCall:None
-If(DISP)<(DISP)+38
-IX.
-
-0918
-DD212CFF
-2553
-
-LO
-IX,DISPBF
-091F
-D8
-2554
-
-RET
-C
-0920
-EB
-2555
-
-EX
-DE,HL
-0921
-0D19
-2556
-
-ADD
-IX,DE
-0923
-C9
-2557
-
-RET
-
-
-
-2558
-;
-
-
-2559
-2560
-2561
-2562
-2563
-2564
-2565
-2566
-2567'
-2568
-2569
-2570
-2571
-2572
-2573
-2574
-·,**************************************************************
-Function: Convert a byte (ASC II code) in A registertodisplaypatternsandstoretheminto
-inputbufferanddisplaybufferrespectively.
-Input:A--abyteofASCIIcode.
-(OUTPTR) -- Point to the result address in input buffer.(DISP)-- Pointto theresultaddressindisplaybuffer.
-Output:StoretheASCIIcodeinto(OUTPTR)
-Patternfortwobytes.Thefirstbytein(DISP)andthesecondbytein(DISP)+l•
-(OUTPTR)<-(OUTPTR)+l(DISP)	<-(DISP)+2
-Regaffected:AFCall:CONVERCURSOR
-CHRWR:
-0924
-ES
-2575
-PUSH
-HL
-0925
-D5
-2576
-PUSH
-DE
-0926
-2A82FF
-2577
-LD
-HL,(OUTPTR)
-0929
-77
-2578
-LD
-(HL),A
-092A
-23
-2579
-INC
-HL
-092B
-2282FF
-2580
-LO
-(OUTPTR),HL
-092E
-FE09
-2581
-CP
-9
-0930
-2857
-2582
-JR
-Z,TABOUT
-0932
-CD2108
-2583
-CALL
-CONVER
-
-
-2584
-TABRET:
-
-0935
-CD790A
-2585
-CALL
-CURSOR
-0938
-Dl
-2586
-POP
-DE
-0939
-El
-2587
-POP
-HL
-093A
-C9
-2588
-RET
-
-
-
-
-
-
-
-
-
-
-
-
-093B
-
-
-
-
-
-
-
-
-
-
-
-3E05
-2589
-2590
-2591
-2592
-2593
-2594
-2595
-2596
-2597
-2598
-2599
-2600
-2601
-2602
-2603
-2604
-;
-·,**************************************************************
-;Function:Print out all the contents in input bufferChecktheTV interface,ifTVinterfaceboardexiststhenjumptoTVinterfaceserviceroutine.
-TherearefourkindsofCRXasfollows:
-Input:(OUTPTR)--Pointtotheresultaddressininputbuffer.
-Output:(OUTPTR)<-INPBF
-(DISP)	<-DISPBF
-Regaffected:AF.
-Call:CR0PTESTPRINTTCLEARCURSOR.
-CR:
-LO	A,5
-CR4:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-interface.
-
-
-
-2633
-2634
-2635
-2636
-2637
-2638
-2639
-2640
-2641
-2642
-
-;'**************************************************************
-Function:SameasCRbut thedisplaytimingisaboutlsec.Input:(OUTPTR)--Pointtotheresultaddressininputbuffer.
-Output:(OUTPTR)<-INPBF
-(DISP)	<-DISPBF
-Regaffected:AFAF'BC'DE'HL',HL•Call:CR0PTESTSCANlPRINTTCLEARCURSOR
-CRl:
-
-
-
-
-
-
-
-
-
-0983
-18B8
-2656
-2657;
-JR	CR4
-2658
-2659
-2660
-2661
-2662
-2663
-2664
-2665
-2666
-;**************************************************************Function: Same as CR but CR3 call routine CLRBF insted of CLEARInput:(OUTPTR)--Pointtotheresultaddressininputbuffer.
-Output: (OUTPTR)<-(OUTPTR)+l(DISP)	<-(DISP)+2
-Regaffected:AFIX.Call:CR0PTESTCLRBF.
-CR3:
-0985
-3E30
-2667
-LD
-A,30H
-0987
-1884
-2668
-JR
-CR4
-
-
-
-
-2669
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-2689
-2690
-2691
-
-TAB?:
-
-;CheckifcursoratTABposition.
-;Zero flag:Setifyes.
-
-
-
-
-2698TAB?LP:
-
-
-
-2704
-2705
-2706
-2707
-2708
-2709
-2710
-2711
-·I**************************************************************
-Function: Clear  the display  buffer and set the contentsof(DISP) and(OUTPTR)tothestartingaddressof displaybuffer andinputbufferrespectively.
-Input:None
-Output:(OUTPTR)<-INPBF
-(DISP)	<-DISPBF
-SetallthecontentsofdisplaybuffertobeFF.
-
-
-
-
-
-
-
-
-2723
-2724
-2725
-2726
+        LD (GETPT),HL
 ;
 ;**************************************************************
-Function:ConvertASCIIcodestodisplaypatternsuntil
-<CR>met.
+; Function: Call GETCHR and convert ASC II codes to hexadecimal
+; values and store them into HL .
+; Input: (GETPT)
+; Output: (GETPT) <- (GETPT)+?
+; A <- G
+; H=0 If there is only one hexadecimal digit.          ---- page 43 ----
+;        Carry flag =1 If the data is not hexadecimal digits.
+;        Zero flag = 1 If the last ASC II code is <CR> .
+; Reg affected: AF DE HL .
+; Call: GETCHR ONE .
 
+GETHL:                          ;Get 4 digit number to HL &L=A
+                                ;C (Non hexadecimal values)
+                                ;Z (8DH)
+        LD      HL,0            ;Assume input 0000
+        PUSH    HL              ;Temporary store in (SP),(SP+1)
+        ADD     HL, SP :        ;HL=SP
+        EX      DE,HL           ;Borrow SP for tempory buffer.
+        CALL    GETCHR
+        EX      DE,HL
+V3      CP      '0'
+        JR      NC,CVT
+        CP      0DH
+        JR      NZ,CV2
+        POP     HL
+        LD      A,L             ;String end.
+        RET
+CV2:
+        AND     A
+        JR      CV1
+CVT:
+        CP      3AH             ;:
+        JR      Z,CV2
+CVTHEX:
+        CALL    ONE             ;ASCII to HEX
+        JR      C,NOTHEX
+        RLD                     ;Rotate into (HL) i.e. (SP)
+        INC     HL              ;SP+1
+        RLD
+        DEC     HL
+        INC     DE
+        LD      A, (DE)
+        JR      CV3
+NOTHEX:                         ;Error
+        POP     HL
+        RET
+;
+;**************************************************************
+; Function: Check the numbers of content in display buffer,
+;           if it excess 40 the change the IX pointer.
+; Input: (DISP)
+; Output: IX <- IX        (If the number of contents are less
+;                         than 40).
+;         IX <- (DISP)-38 (If the numbers of contents are lager
+;                         than 40).
+;         Carry flag = 1  If (DISP) < (DISP)+38
+; Reg affected: AF DE HL IX .
+; Call: None
 
+CHK46:
+        LD      HL, (DISP)
+        LD      DE, DISPBF+38
+        AND     A
+        SBC     HL,DE           ;                      ---- page 44 ----
+        LD      IX, DISPBF
+        RET     C
+        EX      DE,HL
+        ADD     IX,DE
+        RET
+;
+;**************************************************************
+; Function: Convert a byte (ASC II code) in A register
+;           to display patterns and store them into
+;           input buffer and display buffer respectively.
+; Input: A -- a byte of ASC II code. ,
+;        (OUTPTR) -- Point to the result address in input buffer.
+;        (DISP) -- Point to the result address in display buffer.
+; Output: Store the ASC II code into (OUTPTR)
+;         Pattern for two bytes. The first byte in (DISP)
+;         and the second byte in (DISP)+1.
+;         (OUTPTR) <~ (OUTPTR) +1
+;         (DISP) <~ (DISP)+2
+; Reg affected: AF
+; Call: CONVER CURSOR .
 
+CHRWR:
+        PUSH    HL
+        PUSH    DE
+        LD      HL, (OUTPTR)
+        LD      (HL) ,A
+        INC     HL
+        LD      (OUTPTR) ,HL
+        CP      9
+        JR      Z,TABOUT
+        CALL    CONVER
+TAB_RET: ,
+        CALL    CURSOR
+        POP     DE
+        POP     HL
+        RET
+;
+;**************************************************************
+;Function: Print out all the contents in input buffer
+;          Check the Tv interface ,if TV interface
+;          board exists then jump to TV interface
+;          service routine.
+;          There are four kinds of CRX as follows:
+; Input: (OUTPTR) -- Point to the result address in input buffer.
+; Output: (OUTPTR) <- INPBF
+;         (DISP)   <- DISPBF
+; Reg affected: AF .
+; Call: CR0 PTEST PRINTT CLEAR CURSOR .
 
+CR:
+        LD      A,5
+:
+        LD      (CRSET) ,A
+        PUSH    HL
+        LD      HL, (OUTPTR)
+        LD      (HL) , DH
+        CALL    CR0             ;Check Tv interface.
+        CALL    PTEST           ;Check printer interface. ---- page 45 ----
+        JR      Z,CR5
+        LD      A, (CRSET)
+        CP      46H
+        JR      NZ,CR5
+        LD      B,A
+DELAY   CALL    SCAN1
+        DJNZ    DELAY
+CRS5    CALL    PRINTT          ;Print message.
+        POP     HL
+        LD      A, (CRSET)
+        CP      20H
+        RET     Z
+        CP      38H
+        JP      Z,CLRBF
+        CALL    CLEAR
+        CALL    CURSOR
+        RET
+CR0:                            ;Routine for TV interface.
+        LD      A, (TVSET)
+        CP      0A5H
+        JP      Z,TV
+        RET
+;
+;**************************************************************
+; Function: Same as CR but the display timing is about 1 sec,
+; Input: (OUTPTR) -- Point to the result address in input buffer.
+; Output: (OUTPTR) <- INPBF
+;         (DISP)   <- DISPBF
+; Reg affected: AF AF' BC' DE' HL' ,HL.
+; Call: CR0 PTEST SCAN] PRINTT CLEAR CURSOR .
 
+CR1:
+        CALL    DECDSP
+        LD      A,40H
+        JR      CR4
+;
+;**************************************************************
+; Function: Same as CR but CR2 do not call CLEAR and CURSOR.
+; Input: (OUTPTR) -- Point to the result address in input buffer.
+; Output: None
+; Reg affected: AF
+; Call: CR0 PTEST PRINTT .
 
+CR2:
+        LD      A,26H
+        JR      CR4
+;
+;**************************************************************
+; Function: Same as CR but CR3 call routine CLRBF insted of CLEAR .
+; Input: (OUTPTR) -- Point to the result address in input buffer.
+; Output: (OUTPTR) <~ (OUTPTR)+1
+; (DISP) <~ (DISP)+2
+; Reg affected: AF IX .
+; Call: CR0 PTEST CLRBF .
+;
+CR3:
+        LD A,39H
+        JR CR4                                        ;---- page 46 ----     
 
+;**************************************************************
+; Routine for TAB key
+;
+TABOUT:
+        LD      HL, (DISP)
+        LD      DE,DISPBF+72
+        AND     A
+        SBC     HL,DE
+        JR      NC, TAB??
+        LD      A,' '
+        CALL    CONVER
+        CALL    TAB?
+        JR      NZ, TABOUT
+        JR      TAB_RET
+TAB??: 
+        LD      HL, (OUTPTR)
+        DEC     HL 
+        LD      (OUTPTR) ,HL
+        JR      TAB RET
 
+TAB?:                           ;Check if cursor at TAB position.
+                                ;Zero flag :Set if yes.
 
+        LD      DE,DISPBF
+        LD      HL, (DISP)
+        AND     A
+        SBC     HL,DE
+        LD      A,L
+TAB?LP:
+        RET     Z
+        SUB     12
+        JR      NC, TAB?LP
+        RET
+;
+;**************************************************************
+; Function: Clear the display buffer and set the contents
+;           of (DISP) and (OUTPTR) to the starting address
+;           of display buffer and input buffer respectively.
+; Input: None
+; Output: (OUTPTR) <~ INPBF
+;         (DISP) <~ DISPSF
+;         Set all the contents of display buffer to be FF .
+; Reg affected: None
+; Call: CLRDSP
 
-
-
-
-
-
-
-09CA
-09CB
-09CC
-09CE
-09CF
-09D2
-
-
-
-
-
-
-
-
-
-
-
-7E
-23
-FE0DCBCD240918F6
-2727
-2728
-2729
-2730
-2731
-2732
-2733
-2734
-2735
-2736
-2737
-2738
-2739
-2740
-2741
-2742
-2743
-2744
-2745
-2746
-2747
-2748
-2749
-2750
-2751
-2752
-2753
-2754
-2755
-2756
-2757
-2758
-2759
-2760
-2761
-2762
-2763
-Use HL as a pointer , convert the ASCII codes todisplaypatternsandstoredthemintodisplaybuffer.
-Input:HL--Startingaddressof characters.
-(OUTPTR)--Pointtotheresultaddressininputbuffer.(DISP)--Pointtotheresultaddressindisplaybuffer.
-Output:HL<-HL+?
-(OUTPTR)<-(OUTPTR)+?(DISP)	<-(DISP)+2*?
-?isthenumberof cheracterstobeprinted.
-Regaffected:AFHL.Call:CHRWR
+CLEAR:
+        PUSH    HL
+        LD      HL, INPBF
+        LD      (OUTPTR) , HL
+        LD      HL,DISPBF
+        LD      (DISP) , HL
+        POP     HL
+        JP      CLRDSP
+;
+;**************************************************************
+; Function: Convert ASC II codes to display patterns until
+;           <CR> met.                                  ---- page 47 ----
+;           Use HL as a pointer , convert the ASC II codes to
+;           display patterns and stored them into display buffer.
+; Input: HL -- Starting address of characters.
+;        (OUTPTR) -- Point to the result address in input buffer.
+;        (DISP) -- Point to the result address in display buffer.
+; Output: HL <~ HL+?
+;         (OUTPTR) <~ (OUTPTR)+?
+;         (DISP) <- (DISP)+2*?
+;         ? is the number of cheracters to be printed.
+; Reg affected: AF HL .
+; Call: CHRWR
 
 MSG:
-LD	A,(HL)
-INC	HL
-CP	0DH
-RET	z
-CALL	CHRWR
-JR	MSG
-·,**************************************************************Function: Getastringofcharactersandendwith<CR>•Input:
-(OUTPTR)--Pointtotheresultaddressininputbuffer.(DISP)--Pointtotheresultaddressindisplaybuffer.
-Output:(INPTR)<-(OUTPTR)(OUTPTR)<-(OUTPTR)+?(DISP)	<-(DISP)+2*?
-?isthenumber ofinputcharacters.Iftheinputcharacters containsTABcode,thencondition2*?fails.(COUNT)--Numberofcharactersincluding<CR>
-zeroflag--Setifonly<CR>isdepressed.
-Regaffected:AFBCDEHLAF'BC'DE'HL'•Call:CHK40CURSORCR0SACNCHRWR
+        LD      A, (HL)
+        INC     HL
+        CP      SDH
+        RET     Z
+        CALL    CHRWR 
+        JR      MSG
+;
+;**************************************************************
+; Function: Get a string of characters and end with <CR> .
+; Input:
+;       (OUTPTR) -- Point to the result address in input buffer.
+;       (DISP) -- Point to the result address in display buffer.
+; Output: (INPTR) <- (OUTPTR)
+;         (OUTPTR) <- (OUTPTR)+?
+;         (DISP) <- (DISP)+2*?
+;         ? is the number of input characters. If the input
+;         characters contains TAB code,then condition 2*? fails.
+;         (COUNT) -- Number of characters including <CR> .
+;         Zero flag -- Set if only <CR> is depressed.
+; Reg affected: AF BC DE HL AF' BC' DE’ HL’ .
+; Call: CHK40 CURSOR CR0 SACN CHRWR
+
 READLN:
-09D4	2A82FF
-09D7	2286FF
-2764
-2765
-LD	HL,(OUTPTR)
-LD	(INPTR),HL
 
-;Setinputpointer.
-
-2766
+LD HL, (OUTPTR)
+LD (INPTR) , HL                 ; Set input pointer.
 RDLOOP:
-
-09DA
-CD1209
-2767
-
-CALL
-CHK40	;Adjust
-IXpointer.
-09DD
-CD790A
-2768
-
-CALL
-CURSOR
-
-09E0
-3E50
-2769
-
-LD
-A,50H
-
-09E2
-3281FF
-2770
-
-LD
-(CRSET),A
-
-09E5
-CD71M
-2771
-
-CALL
-CR0	;Check
-TVinterface.
-09E8
-CD4602
-2772
-
-CALL
-SCAN
-
-09EB
-FEll
-2773
-
-CP
-llH
-
-09ED
-CAE600
-2774
-
-JP
-Z,ESCAPE
-;SOFTWAREESCAPE(CONTROLQ).
-09F0
-FE0D
-2775
-
-CP
-0DH	CR
-
-09F2
-2822
-2776
-
-JR
-Z,RD_END
-
-09F4
-FE5F
-2777
-
-CP
-05FH	<--
-
-09F6
-282E
-2778
-
-JR
-Z,LEFT
-
-09F8
-FE5E
-2779
-
-CP
-5EH
-;UParrow.
-09FA
-28DE
-2780
-
-JR
-Z,RDLOOP
-
-09FC
-FE69
-2781
-
-CP
-69H
-;DOWNarrow.
-09FE
-28DA
-2782
-
-JR
-Z,RDLOOP
-
-0A00
-2A84FF
-2783
-
-LD
-HL,(DISP)
-
-0A03
-ll7CFF
-2784
-
-LD
-DE,DISPBF+80
-;Checkthenumbersofcharacter
-
-
-
-
-
-2785
-
-
-ininputbuffer.
-
-2786
-
-
-The numbersofinputcharacters
-
-2787
-
-
-islimitedto40.
-0A06
-A7
-2788
-AND
-A
-
-0A07
-ED52
-2789
-SBC
-HL,DE
-
-0A09
-30CF
-2790
-JR
-NC,RDLOOP
-
-0A0B
-FE68
-2791
-CP
-KTAB
-;CheckTABkey
-0A0D
-2002
-2792
-JR
-NZ,NOTTAB
-0A0F
-3E09
-2793
-
-LD
-A,09
-;09istheASCIIcodefor
-
-
-2794
-
-
-
-;TABkey.
-
-
-2795
-NOTTAB:
-
-
-
-0All
-CD2409
-2796
-
-CALL
-CHRWR
-
-0Al4
-18C4
-2797
-
-JR
-RDLOOP
-
-
-
-2798
-RD
-END:
-
-
-0Al6
-2A82FF
-2799
-
-
-LD
-HL,(OUTPTR)
-0Al9
-77
-
-2800
-LD
-(HL),A
-Store0DH
-0AlA
-ED5B86FF
-
-2801
-LD
-DE,(INPTR)
-
-0AlE
-ED52
-
-2802
-SBC
-HL,DE
-zeroflag
-0A20
-23
-
-2803
-INC
-HL
-
-0A21
-7D
-
-2804
-LD
-A,L
-
-0A22
-320000
-X
-2805
-LD
-(COUNT),A
-;Set/COUNT/
-0A25
-C9
-2806
-RET
-
-
-2807
-LEFT:
-
-
-;Backspacekeyserviceroutine.
-0A26
-2A86FF
-2808
-
-LD
-HL,(INPTR)
-
-0A29
-ED5B82FF
-2809
-
-LD
-DE,(OUTPTR)
-
-0A2D
-A7
-2810
-
-AND
-A
-
-0A2E
-ED52
-2811
-
-SBC
-HL,DE
-
-0A30
-30A8
-2812
-
-JR
-NC,RDLOOP
-;IgnoreifexceedingLEFTend.
-0A32
-EB
-2813
-
-EX
-HL,DE
-
-0A33
-2B
-2814
-
-DEC
-HL
-;Decreasethepointerof
-
-
-2815
-
-
-
-;inputbufferbyone.
-0A34
-2282FF
-2816
-
-LD
-(OUTPTR),HL
-
-0A37
-7E
-2817
-
-LD
-A,(HL)
-
-0A38
-FE09
-2818
-
-CP
-09
-
-0A3A
-2805
-2819
-
-JR
-Z,B TAB
-
-0A3C
-CD6A0A
-2820
-
-CALL
-BSP
-
-0A3F	1899	2821
-JR
-RDLOOP
-2822BTAB:
-0A41
-CD6A0A
-2823
-
-CALL
-BSP
-0A44
-CDA909
-2824
-
-CALL
-TAB?	;CheckifcursoratTABposition.
-0A47
-280A
-2825
-
-JR
-Z,BTABl
-0A49
-2A84FF
-2826
-
-LD
-HL,(DISP)
-0A4C
-2B
-2827
-
-DEC
-HL
-0A4D
-7E
-2828
-
-LD
-A,(HL)
-0A4E
-2B
-2829
-
-DEC
-HL
-0A4F
-A6
-2830
-
-AND
-(HL)
-0A50
-3C
-2831
-
-INC
-A
-0A51
-28EE
-2832
-
-JR
-Z,B_TAB
-
-
-2833
-BTABl:
-
-
-0A53
-2A82FF
-2834
-
-LD
-HL,(OUTPTR)
-
-
-2835
-BTAB2:
-
-
-0A56
-2B
-2836
-
-DEC
-HL
-0A57
-7E
-2837
-
-LD
-A,(HL)·
-0A58
-0A5A
-FE20
-C2DA09
-2838
-2839
-CP
-JP
-I	I
-
-NZ,RDLOOP
-0A5D
-CDA909
-2840
-CALL
-TAB?
-0A60
-CADA09
-2841
-JP
-Z,RDLOOP
-0A63
-3E20
-2842
-LD
-A,'I
-
-
-
-
-0A65
-CD2108
-2843
-CALL
-CONVER
-0A68
-18EC
-2844
-JR
-B TAB2
-
-
-2845
-BSP:
-
-
-;Cleartherightmostpatterns
-
-
-2846
-
-
-
-;indisplaybuffer.
-0A6A
-E5
-2847
-
-PUSH
-HL
-
-0A6B
-CD9903
-2848
-
-CALL
-DEC SP
-
-0A6E
-2B
-2849
-
-DEC
-HL
-
-0A6F
-28
-2850
-
-DEC
-HL
-
-0A70
-2B
-2851
-
-DEC
-HL
-
-0A71
-2284FF
-2852
-
-LD
-(DISP),HL
-
-0A74
-CD790A
-2853
-
-CALL
-CURSOR
-
-0A77
-El
-2854
-
-POP
-HL
-
-0A78
-C9
-2855
-
-RET
-
-
-2856
-2857
-2858
-2859
-2860
-2861
-2862
-2863
-2864
-2865
-2866
-
-I
-·I**************************************************************
-Function:Getcursormessage.
-Input:(DISP)--Pointtotheresultaddressindisplaybuffer.
-Output:Thefirstbyteof cursorin(DISP)andthesecondbyteofcusorin(DISP)+l
-(DISP)<-(DISP)	The contentof(DISP)isunchanged.
-Regaffected:AFCall:CONVER
-
-CURSOR:
-3A79	3E5B
-0A7B	CD2108
-0A7E	E5
-0A7F	2A84FF
-0A82	2B
-0A83	2B
-0A84	2284FF
-0A87	El
-0A88	C9
-2867
-2868
-2869
-2870
-2871
-2872
-2873
-2874
-2875
-2876
-2877
-
-CCURSOR:
-
-
-
-
-
-
-;
-LD
-
-CALLPUSHLDDECDECLDPOPRET
-A,05BH
-
-CONVERHL
-HL,(DISP)HL
-HL(DISP),HLHL
-PROMPT
-CALLHEREIFCHANGEPROMPT
-2878
-2879
-2880
-2881
-2882
-2883
-2884
-2885
-2886
-2887
-2888
-2889
-2890
-2891
-;**************************************************************
-Function:ConvertbinarydatainHLtoASCIIcodeanddisplaypatterns.
-Input:HL--Twobytesof hexadecimalvaluesinHL.
-(OUTPTR)--Pointtotheresultaddressininputbuffer.(DISP)--Pointtotheresultaddressindisplaybuffer.
-Output:FourASCIIcodein(OUTPTR)-(OUTPTR)+3
-Eightbytesofdisplaypatternin(DISP)-(DISP)+7(OUTPTR)<-(OUTPTR)+4
-(DISP)	<-(DISP)+8
-Regaffected:AF
-Call:HEX2
-HEXX:
-0A8'
-0A8A
-0A8D
-0A8E
-0A91
-7CCD9A0A7DCD9A0AC9
-2892
-2893
-2894
-2895
-2896
-2897;
-LDCALLLDCALLRET
-A,HHEX2A,LHEX2
-2898
-2899
-2900
-·I**************************************************************
-Function:ConvertbinarydatasinHLtoASCIIcodesanddisplaypatterns.
-
-2901
-2902
-2903
-2904
-2905
-2906
-2907
-2908
-2909
-2910
-CallroutintSPACEltoinsertaspace.
-Input:SameasHEXX
-Output:FiveASCIIcodesin(OUTPTR)-(OUTPTR)+4
-Ten bytes of display pattern in (DISP) -(DISP)+8(OUTPTR)<-(OUTPTR)+5
-(DISP)	<-(DISPJ+l0
-Regaffected:AFCall:HEXXSPACE!•
-
-HEX4:
-0A92
-0A95
-0A97
-CD890A3E20C32409
-2911
-2912
-2913
-2914
-CALLSPACE!LD
-JP
-i
-HEXX
-A,'	I
-CHRWR
-
-
-
-
-
-
-
-
-
-
-
-
-0A9A	E5
-2915
-2916
-2917
-2918
-2919
-2920
-2921
-2922
-2923
-2924
-2925
-2926
-2927
-2928
-2929
-2930
-2931
-·,**************************************************************
-Function:ConvertbinarydatatoASCIIcodeanddisplaypatterns.
-Input:A--abyteinA register.
-(OUTPTR) -- Point to the result address in input buffer.(DISP)--Pointtotheresultaddressindisplaybuffer.
-Output:ThefirstASCII codein(OUTPTR)andthesecondASCII codein(OUTPTR)+l•Displaypatternsforfourbytes•Thefirstbytein(DISP)andthesecondbytein(DISP)+l,andsoon.
-(OUTPTR)<-(OUTPTR)+2(DISP)	<-(DISP)+4
-Regaffected:AF
-·;Call:HEX!
-HEX2:
-PUSH	HL
-
-
-
-
-
-0AA8
-0AAB
-0AAC
-
-CDAD0A
-ElC9
-
-2939
-2940
-2941
-2942i
-
-CALL	HEXl
-POP	HL
-RET
-2943
-·,**************************************************************
-2944
-2945
-2946
-2947
-2948
-Function:ConvertbinarydatatoASCIIcodeanddisplaypattern.
-Input:A--LSB4 bitscontainsthebinarydata.
-(OUTPTR) -- Point to the result address in input buffer.(DISP)--Point totheresultaddressindisplaybuffer.
-
-
-
-
-
-
-
-0AAD
-
-
-
-
-
-
-
-C630
-2949·
-2950
-2951
-2952
-2953
-2954
-2955
-2956
-2957
-2958
-Output:ASCIIcodein(OUTPTR).
-Patternfortwobytes.Thefirstbytein(DISP)andthesecondbytein(DISP)+l•
-(OUTPTR)<-(OUTPTR)+l(DISP)	<-(DISP)+2
-Regaffected:AFCall: CHRWR
-HEXl:
-ADD	A,'0'
-
-0AAF
-FE3A
-2959
-
-CP
-'9'+1
-0AB1
-3802
-2960
-
-JR
-C,HHH
-0AB3
-C607
-2961
-
-ADD
-A,7
-
-
-2962
-HHH:
-
-
-0AB5
-C32409
-2963
-2964,
-JP	CHRWR
-2965
-2966
-2967
-2968
-2969
-2970
-2971
-2972
-2973
-2974
-2975
-2976
-2977
-·,**************************************************************Function: ConverthexadecimalvaluesinHLtocorrespondingdecimalformat(inASCII CODEformat).
-Input:HL--Hexadecimalvaluestobechanged.
-(OUTPTR)--Pointtotheresultaddressininputbuffer.(DISP)--Pointtotheresultaddressindisplaybuffer.
-Output: (OUTPTR)<-(OUTPTR)+?(DISP)	<-(DISP)+2*?
-Regaffected:AFBCDEHLIY•Call:CHRWR
-
-DECIMAL:
-0AB8
-0ABC
-0ABE
-
-0AC0
-0AC3
-0AC5
-0AC8
-0ACA
-0ACB
-0ACD
-0ACF
-0AD0
-FD21A90C060.3
-0E00
-
-FD5E00FD23FD5600FD23AF
-
-ED523803
-3C
-}.8F9
-2978
-2979
-2980
-2981
-2982
-2983
-2984
-2985
-2986
-2987
-2988
-2989
-2990
-2991
-
-
-CLOOP:
-
-
-
-
-DECLOOP:
-LDLDLD
-
-LDINCLDINCXOR
-
-SBCJRINCJR
-IY,TENSB,3
-C,0
-
-E,(IY}IY
-D,(IY}IY
-A
-
-HL,DEC,ADDBACKA
-DECLOOP
-Tableoftn•spowers.Outputthreedigits.
-Zerosupressflag.
-
-0AD2
-0AD3
-0AD6
-0AD8
-0AD9
-0ADA
-
-0ADC
-0ADD
-0ADF
-0AE2
-0AE3
-
-19
-CDD90A10E8
-cg
-
-A72806
-
-4FC630C32409
-
-79
-A7
-2992
-2993
-2994
-2995
-2996
-2997
-2998
-2999
-3000
-3001
-3002
-3003
-3004
-3005
-3006
-ADDBACK:
-
-
-
-SUPRESS:
-
-
-
-
-
-YES0:
-
-ADDCALLDJNZRET
-
-ANDJR
-
-LDADDJP
-LDAND
-
-HL,DESUPRESSCLOOP
-
-A
-Z,YES_0
-
-C,AA,30HCHRWR
-
-A,C
-A
-
-
-
-
-
-
-;Ifzerothenckeckzero
-;supressflag.
-Else
-ConverttoASCIIcodeformatandoutput.
-0AE4
-2805
-3007
-3008
-JR
-PRINT0:
-Z,BLANK0	Supressleadingzero•
-
-3017
-3018
-3019
-3020
-3021
-3022
-3023
-3024
-3025
-3026
-3027
-3028
-3029
-3030
-
-·'**********************************'****************************
-Function:ConvertASCIIcodestocorrespondinghexadecimal
-valuesuntiLmetnonehexadecimaldigit,ThereturnvalueisstoredinHL.
-Input:DE--PointtothefirstlocationofASCIIcodetobe changed.
-Output:HL--Returnvalues(hexadecimaldigits).
-(HEXFLAG)issetifthereexistsadigitwithin('A'••'F')orthelastnonehexadecimalcharacteris'H'
-Regaffected:AFBCDEHL.Call:ONE
-
-3031HEXBIN:
-3032
-
-0AF4
-AF
-
-3033
-XOR
-A
-0AF5
-320000
-X
-3034
-LD
-(HEXFLAG),A
-0AF8
-47
-
-3035
-LD
-B,A
-0AF9
-0AFA
-67
-6F
-
-3036	LD
-3037	LD
-3038HBLOOP:
-H,A
-L,A
-
-
-[HL]=l6*[HL]
-
-
-
-
-
-
-0B0A
-lA
-3051
-LD
-A,(DE)
-0B0B
-FE48
-3052
-CP
-'H'
-0B0D
-C0
-3053
-RET
-NZ
-0B0E
-13
-3054
-INC
-DE
-0B0F
-320000
-X3055
-LD
-(HEXFLAG),A
-0B12
-lA
-3056
-LD
-A,(DE)
-0B13
-C9
-3057
-RET
-
-
-
-3058
-
-
-
-
-3059
-
-
-3060
-3061
-3062
-3063
-3064
-;
-;**************************************************************
-Function:Convertabyte(ASCIIcode)inAregistertohexadecimaldigit.
-Input:A--ASCIIcode.
-30Vi
-3066
-Output:A--Hexadecimal
-Carryflag=1
-values.
-Ifthedataisnotahexadecimaldigit.
-3067
-3068
-3069
-3070
-3071
-3072
-(HEXFLAG)isnotzeroIfthecontentofAwithin'A'and'F'.
-Regaffected:AFCall:None
-
-ONE:
-0B14
-FE47
-3073
-CP
-'F'+l
-0B16
-3F
-3074
-CCF
-
-
-
-
-
-
-
-
-
-0BlE
-D0
-
-3080
-RET
-NC
-0BlF
-D607
-
-3081
-SUB
-7
-0B21
-FE0A
-
-3082
-CP
-10
-0B23
-D8
-
-3083
-RET
-C
-0B24
-320000
-X
-3084
-LD
-(HEXFLAG),A
-0B27
-C9
-
-3085
-RET
-
-
-
-3086
-3087
-·,'**************************************************************
-
-3088
-Function:ConvertASCIIcodestocorrespondingdecimalvalues
-
-3089
-inbinaryuntilmetnondecimaldigits.
-
-3090
-Input:DE--PointtothefirstASCIIcode(Decimalformat)
-
-3091
-tobechanged.
-
-3092
-Output:HL--Returnvalues(Decimaldigits).
-
-3093
-Regaffected:AFBCDEHL•
-
-3094
-Call:None
-
-3095
-
-
-3096
-DECBIN:
-
-3097
-
-0B28
-210000
-3098
-LD	HL,0
-0B2B
-lA
-3099
-LD	A,(DE)
-3100
-NDIGIT:
-
-
-
-[HL)=10*[HL)
-
-
-
-
-
-
-
-
-3117
-3118
-3119
-3120
-3121
-·'**************************************************************
-'Function:Skip TABsandBLANKs.
-Input:HL--Addresstobecheck.
-Output:HL<-HL+?(?isthe numbersofTAB andBLANK).
-
-
-
-
-3138-RETURNC-FLAGIF[A]ISNOTWITHIN{IAI••IzI}
-
-
-
-
-;1
-;A
-;SPACE
-;2
-;S
-;<--
-;3
-;D
-;-->
-;4
-;F
-;DOWNARROW
-;5
-;G
-;UPARROW
-;6
-;H
-;CR
-;7
-;J
-;/
-;8
-;K
-;<
-;9
-;L
-;>
-;0
-,
-;UNUSED
-;Q
-;Z
-,
-;W
-;X
-ii
-;E
-;C
-;@
-;R
-;V
-
-;T
-;B
-
-
-
-
-
-
-
-
-0B89	2E	3202K37	DEFB	2EH	,.
-0B8A	7B	3203K38	DEFB	7BH	;UNUSED
-0B88	50	3204K39	DEF8	50H	;P
-0B8C	3F	3205  K3A	DEFB	3FH	;?
-0B8D	7B	3206K78	DEFB	78H	;UNUSED
-3207RTABLE:
-088E	41	3208	DEFB	41H	;A
-0B8F	46	3209	DEF8	46H	;F
-0B90	42	3210	DEF8	42H	;B
-0B91	43	3211	DEF8	43H	;C
-0B92	44	3212	DEFB	44H	;D
-0B93	45	3213	DEFB	45H	;E
-0B94	48	3214	DEF8	48H	;H
-0B95	4C	3215	DEFB	4CH	;L
-0B96	60	3216	DEF8	60H	;A'
-0B97	61	3217	DEFB	61H	;F'
-0B98	62	3218	DEFB	62H	;B'
-0899	63	3219	DEFB	63H	;C'
-0B9A	64	3220	DEFB	64H	;D'
-0B9B	65	3221	DEF8	65H	;E'
-0B9C	66	3222	DEFB	66H	;H'
-0B9D	67	3223	DEFB	67H	;L'
-0B9E	49	3224	DEF8	49H	;I
-089F	58	3225	DEF8	58H	;X
-08A0	49	3226	DEFB	49H	;I
-08Al	59	3227	DEFB	59H	;Y
-0BA2	53	3228	DEFB	53H	;S
-0BA3	50	3229	DEFB	50H	;P
-0BA4	50	3230	DEFB	50H	;P
-0BA5	43	3231	DEFB	43H	;C
-0BA6	49	3232	DEFB	49H	;I
-08A7	46	3233	DEFB	46H	;F
-3234SEGTAB:
-0BA8	FFFF	3235	DEFW	0FFFFH	;SPACE
-08AA	FEFl	3236	DEFW	0FlFEH	;!
-08AC	DFF7	3237	DEFW	0F7DFH	·,"
-08AE	31FC	3238	DEFW	0FC31H	;#
-0B80	12FC	3239	DEFW	0FC12H	;$
-0BB2	1BC3	3240	DEFW	0C31BH·	;%
-08B4	24E7	3241	DEFW	0E724H	;&
-0BB6	FFF8	3242	DEFW	0FBFFH	•I
-0BB8	FFEB	3243	DEFW	0E8FFH	;(
-0BBA	FFD7	3244	DEFW	0D7FFH	;)
-0BBC	3FC0	3245	DEFW	0C03FH	·I*
-08BE	3FFC	3246	DEFW	0FC3FH	;+
-08C0	FFDF	3247	DEFW	0DFFFH	;,
-08C2	3FFF	3248	DEFW	0FF3FH	I
-Ll)r:	OBJCODEMSTMTSOURCESTATEMENT	ASM5.9
-0BC4	Fr'BF	3249	DEFW	0BFFFH	,.
-0BC6	FFDB	3250	DEFW	0DBFFH	;/
-0BC8	C0DB	3251	DEFW	0DBC0H	;0
-0BCA	FFFC	3252	DEFW	0FCFFH	;1
-0BCC	24FF	3253	DEFW	0FF24H	;2
-0BCE	30FF	3254	DEFW	0FF30H	;3
-08D0	19FF	3255	DEFW	0FF19H	;4
-08D2	72F7	3256	DEFW	0F772H	;5
-08D4	02FF	3257	DEFW	0FF02H	;6
-0BD6	F8FF	3258	DEFW	0FFF8H	;7
-0BD8	00FF	3259	DEFW	0FF00H	;8
-0BDA	10FF	3260	DEFW	0FF10H	;9
-0BDC	7FEF	3261	DEFW	0EF7FH	,
-0BDE	BFDF	3262	DEFW	0DFBFH	;;
-0BE0	F7DB	3263	DEFW	0DBF7H	;<
-0BE2	37FF	3264	DEFW	0FF37H	;=
-0BE4	F7E7	3265	DEFW	0E7F7H	;>
-0BE6	7CFD	3266	DEFW	0FD7CH	;?
-0BE8	A0FD	3267	DEFW	0FDA0H	;@
-0BEA	08FF	3268	DEFW	0FF08H	;A
-0BEC	70FC	3269	DEFW	0FC70H	;B
-0BEE	C6FF	3270	DEFW	0FFC6H	;C
-0BF0	F0FC	3271	DEFW	0FCF0H	;D
-0BF2	06FF	3272	DEFW	0FF06H	;E
-0BF4	0EFF	3273	DEFW	0FF0EH	;F
-0BF6	42FF	3274	DEFW	0FF42H	;G
-0BF8	09FF	3275	DEFW	0FF09H	;H
-0BFA	F6FC	3276	DEFW	0FCF6H	;I
-0BFC	ElF·F	3277	DEFW	0FFE1H	;J
-0BFE	8FEB	3278	DEFW	0EBBFH	;K
-0C00	C7FF	3279	DEFW	0FFC7H	;L
-0C02	C9F3	3280	DEFW	0F3C9H	;M
-0C04	C9E7	3281	DEFW	0E7C9H	;N
-0C06	C0FF	3282	DEFW	0FFC0H	;O
-0C08	0CFF	3283	DEFW	0FF0CH	;P
-0C0A	C0EF	3284	DEFW	0EFC0H	;Q
-0C0C	0CEF	3285	DEFW	0EF0CH	;R
-0C0E	12FF	3286	DEFW	0FF12H	;S
-0Cl0	FEFC	3287	DEFW	0FCFEH	;T
-0Cl2	ClFF	3288	DEFW	0FFC1H	;U
-0Cl4	CFDB	3289	DEFW	0DBCFH	;V
-0Cl6	C9CF	3290	DEFW	0CFC9H	;W
-0Cl8	FFC3	3291	DEFW	0C3FFH	;X
-0ClA	FFFl	3292	DEFW	0FlFFH	;Y
-0ClC	F6DB	3293	DEFW	0DBF6H	;Z
-0ClE	FFCF	3294	DEFW	0CFFFH	,
-0C20	FFE7	3295	DEFW	0E7FFH	;/
-0C22	F0FF	3296	·oEFW	0FFF0H	;]
-0C24	FFCD	3297	DEFW	0CDFFH	;
-0C26	7FEB	3298	DEFW	0EB7FH	;<
-0C28	08BF	3299	DEFW	0BF08H	;A'
-0C2A	0Ei3F	3300	DEFW	·0BF0EH	;F'
-0C2C	70BC	3301	DEFW	0BC70H	;B'
-0C2E	C6BF	3302	DEFW	0BFC6H	;CI
-0C30	F0BC	3303	DEFW	0BCF0H	;D'
-0C32	06BF	33.04	DEFW	0BF06H	;E'
-0C34	09BF	3305	DEFW	0BF09H	;H'
-0C36	C7BF	3306	DEFW	0BFC7H	;L'
-LOC	OBJCODEMSTMTSOURCESTATEMENT	ASM5.9
-
-3307SHIFTT:
-0C38	3C	3308	DEFB	3CH	;<
-0C39	FF	3309	DEFB	0FFH
-0C3A	3E	3310	DEFB	3EH	;>
-0C3B	FF	3311	DEFB	0FFH
-0C3C	2A	3312	DEFB	2AH	;*
-0C3D	21	3313	DEFB	21H
-,•.I
-0C3E	22	3314	DEFB	22H	;ff
-0C3F	23	3315	DEFB	23H	;lt
-0C40	24	3316	DEFB	24H	;$
-0C41	25	3317	DEFB	25H	;%
-0C42	26	3318	DEFB	26H	;&
-0C43	27	3319	DEFB	27H
-,•I
-0C44	28	3320	DEFB	28H	;(
-0C45	29	3321	DEFB	29H	;)
-0C46	3B	3322	DEFB	3BH	ii
-0C47	FF	3323	DEFB	0FFH
-0C48	FF	3324	DEFB	0FFH
-0C49	FF	3325	DEFB	0FFH
-0C4A	FF	3326	DEFB	0FFH
-0C4B	2F	3327	DEFB	2FH	;/
-0C4C	FF	3328	DEFB	0FFH
-0C4D	FF	3329	DEFB	0FFH
-0C4E	FF	3330	DEFB	0FFH
-0C4F	FF	3331	DEFB	0FFH
-0C50	FF	3332	DEFB	0FFH
-0C51	FF	3333	DEFB	0FFH
-0C52	FF	3334	DEFB	0FFH
-0C53	FF	3335	DEFB	0FFH
-0C54	FF	3336	DEFB	0FFH
-0C55	2D	3337	DEFB	2DH	;-
-0C56	FF	3338	DEFB	0FFH
-0C57	5B	3339	DEFB	5BH	;
-0C58	40	3340	DEFB	40H	;@
-0C59	FF	3341	DEFB	0FFH
-0C5A	FF	3342	DEFB	0FFH
-0C5B
-3D
-3343
-DEFB
-3DH
-;=
-0C5C
-2B
-3344
-DEFB
-2BH
-;+
-3345MPFII:
-0C5D	2A2A2A2A	3346	DEFM	'*****MPF'
-0C65	2D	3347	DEFB	2DH	,
-0C66	49	3348	DEFM	III
-0C67	2D	3349	DEFB	2DH	;-
-0C68	504C5553	3350	DEFM	'PLUS*****'
-0C71	0D	3351	DEFB	0DH
-3352ERRSP:
-0C72	4552524F	3353	DEFM	'ERROR'
-0C77	2D	3354	DEFB	2DH
-0C78	5350	3355	DEFM	'SP'
-0C7A	0D	3356	DEFB	0DH
-3357SYSSP:
-0C7B	535953	3358	DEFM	'SYS'
-0C7E	2D	3359	DEFB	2DH
-0C7F	5350	3360	DEFM	'SP'
-0C81	0D	3361	DEFB	0DH
-LOC	OBJCODEMSTMTSOURCESTATEMENT	ASM5.9
-
-
-3365
-PRTOFF:
-
-0C89
-50525420
-3366
-DEFM	'PRTOFF'
-
-0C90
-0D
-3367
-DEFB	0DH
-
-
-
-3368
-RAM2KVALUESET:
-
-0C91
-00F8
-3369
-DEFW	0F800H
-;SET
-EDITOR
-LIMITS.
-0C93
-FFFC
-3370
-DEFW	0FCFFH
-
-
-
-0C95
-00FE
-3371
-DEFW	0FE00H
-;SET
-SYMBOL
-LIMITS.
-0C97
-A0FE
-3372
-DEFW
-0FEA0H
-0C99
-00FD
-3373
-
-DEFW
-0FD00H
-;SETOBJECT
-LIMITS.
-0C9B
-FFFD
-3374
-
-DEFW
-0FDFFH
-
-
-
-
-3375
-RAM4K
-VALUE SET:
-
-
-
-0C9D
-00F0
-3376
-
-DEFW
-0F000H
-;SETEDITOR
-LIMITS.
-0C9F
-FFFA
-3377
-DEFW
-0FAFFH
-0CA1
-00FD
-3378
-DEFW
-0FD00H
-;SET
-SYMBOL
-LIMITS.
-0CA3
-A0FE
-3379
-DEFW
-0FEA0H
-
-
-
-0CA5
-00FB
-3380
-DEFW
-0FB00H
-;SET
-OBJECT
-LIMITS.
-0CA7	FFFC	3381	DEFW	0FCFFH
-3382TENS	;TABLEUSEDBY'TOASCII'TOCONVERT
-
-3383
-;BINARY
-TODECIMALDIGITS
-0CA9
-6400
-3384
-DEFW
-100
-0CAB
-0A00
-3385
-DEFW
-10
-0CAD
-0CAF
-0100	3386	DEFW
-20455252	3387ERRSMSGDEFM
-1
-IERRORS'
-0CB6	0D	3388	DEFB	0DH
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-3389
-3390
-3391
-3392
-3393
-3394
-3395
-3396
-3397
-*HEADINGRAMSTORAGE
-·I************************·I
-.I*	*.I
-;*	STORAGE	*;
-;*	FOR MONITOR	*;
-.*	*.
-·************************·
-FEA0
-
-FEA0FED0
-3398
-3399
-3400
-3401
-3402
-
-USERSTK:
-
-SYSSTK:
-ORG
-
-DEFSORG
-0FEA0H
-30H
-0FED0H
-FED0
-
-FED9
-
-FEDBFEDDFEDFFEE!FEE3FEESFEE?FEE9FEEB
-3403
-3404
-3405
-3406
-3407
-3408
-3409
-3410
-3411
-3412
-3413
-3414
-3415
-3416
-STEPBFDEFSTEXTF
-EDIT-START ADDRTEXT-T
-END DATA ADDREND-LNNO
-RAM-START ADDREDIT END ADDRST F
-ST-T
-OBJFOBJ-TEND-ADDR
-9
-
-DEFS
-
-DEFSDEFSDEFSDEFSDEFSDEFSDEFSDEFSDEFS
-
-;ASSEMBLERSOURCEFROM.
-2	;EDITORBOTTOM.
-;ASSEMBLERSOURCETO.
-2	;EDITORTOP.
-2	;EDITORLASTLINENUMBER.
-2	;EDITORLOWLIMIT.
-2	;EDITORHIGH LIMIT.
-2	;ASSEMBLERSYMBOLTABLEFROM.
-2	;ASSEMBLERSYMBOLTABLETO.
-2	;ASSEMBLEROBJECTCODEFROM.
-2	;ASSEMBLEROBJECTCODETO.
-2	;Containsthelimitaddress
-;ofccommandINSERTorDELETE•
-FEEDFEEFFEF0FEFl
-
-FEF2FEF3
-3417
-.3418
-3419
-3420
-3421
-3422
-3423
-BRADBRDAPOWERUPTEST
-
-STEPFGPR.TFLG
-DEFS	2
-DEFS	1
-DEFS	1
-DEFS	1
-DEFS	1
-DEFS	1
-;Breakpointaddress•
-;Dataofbreakpointaddress•
-;Powerupinitialization•
-;Bit7---set whenillegalkey
-;	isentered.
-;STEPmodetestflag•
-;Printertoggleswitch•
-FEF4
-3424
-BEEPSETDEFS	1
-;Beepsoundtoggleswitch.
-FEF5FEF6FEF8FEFAFEFEFEFFFF01
-
-FF03FF04FF2CFF7EFF80FF81FF82FF84FF86
-
-FF88FF8AFF8C
-3425
-3426
-3427
-3428
-3429
-3430
-3431
-3432
-3433
-3434
-3435
-3436
-3437
-3438
-3439
-3440
-3441
-3442
-3443
-3444
-3445
-3446
-FBEEPTBEEPMADORTEMPlATEMPHLTEMPIMlAD
-
-RCOUNTINPBFDISPBFGETPTTYPEFGCRSETOUTPTRDISPINPTRREGBF:USERAFUSERBCUSERDE
-DEFS	1
-DEFS	2
-DEFS	2
-DEFS	4
-DEFS	1
-DEFS	2
-DEFS	2
-DEFS	1
-DEFS	40
-DEFS	82
-DEFS	2
-DEFS	1
-DEFS	1
-DEFS	2
-DEFS	2
-DEFS	2
-DEFS	2
-DEFS	2
-DEFS	2
-;FreqencyofBEEP•
-;TimedurationofBEEP•
-;Temporarystorage•
-;SeecommentsoncommandSTEP.
-;Temporarystorage•
-;Temporarystorage.
-;Containsthe addressofOpcode'FF'
-;serviceroutine.(RST38H,mode
-;1interrupt,etc).
-;Registercountsinregistertable.
-;Inputbuffer•
-;Displaybuffer•
-;Temporary storageforGETHL.
-;Typetestflag•
-;Displaydelaytime•
-;Inputbufferpointer.
-;Displaybufferpointer•
-;Limitofinputbufferpointer•
-
-FF8E
-3447
-USERHL
-DEFS
-2
-
-FF90
-3448
-UAFP
-DEFS
-2
-AF'
-FF92
-3449
-UBCP
-DEFS
-2
-BC'
-FF94
-3450
-UDEP
-DEFS
-2
-DE'
-FF96
-3451
-UHLP
-DEFS
-2
-HL'
-FF98
-3452
-USERIX
-DEFS
-2
-
-FF9A
-3453
-USERIY
-DEFS
-2
-
-FF9C
-3454
-USERSP
-DEFS
-2
-
-FF9E
-3455
-USERPC
-DEFS
-2
-
-FFA0
-3456
-USERIF
-DEFS
-2
-
-
-3457
-BLANK
-EQU
-6FD0H
-
-3458KTAB	EQU	068H	;TABCODE
-3459TVSET	EQU	0A000H;Thefirstmemorylocation3460			;ofTV interfaceboard
-3461TV	EQU	0A001H;Thestartingaddressof3462			;programonTVinterface
-monitorboard
-3463  BASICC	EQU	2020H
-3464
-;Thestartingaddressof
-;reenterBASIC
-                                ;                      ---- page 61 ----
+        CALL    CHK49   ;Adjust IX pointer.
+        CALL    CURSOR
+        LD      A, 50H
+        LD      (CRSET),A
+        CALL    CRO     ;Check TV interface.
+        CALL    SCAN
+        CP      11H
+        JP      Z, ESCAPE       ;SOFTWARE ESCAPE (CONTROL Q).
+        CP      0DH 3   ; CR
+        JR      Z,RD_END
+        CP      05FH    ; <--
+        JR      Z,LEFT
+        CP      5EH             ;UP arrow.
+        JR      Z,RDLOOP
+        CP      69H             ;DOWN arrow.
+        JR      Z,RDLOOP
+        LD      HL, (DISP)
+        LD      DE, DISPBF+88   ;Check the numbers of character   ---- page 48 ----
 

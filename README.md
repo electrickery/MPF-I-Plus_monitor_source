@@ -10,4 +10,4 @@ tesseract can do better:
 
     tesseract   'MPF-IP MONITOR SOURCE PROGRAM LISTING_38.jpg' page35 --psm 4
 
-This forces one column mode.
+This forces one column mode. '--psm 6' works even better.
