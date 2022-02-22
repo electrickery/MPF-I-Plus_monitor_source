@@ -63,7 +63,7 @@ ZERO_2K	EQU	8
 ; bit3--digit 4
 ; bit4--digit 5
 ; bit5--digit 6
-; bit6--digit 7
+; bit6--digit                   ;
 ; bit7--digit 8
 ; Port B (Address 81H): The second eight digits of display
 ; bit0--diqit9
@@ -2782,4 +2782,683 @@ RDLOOP:
         JR      Z,RDLOOP
         LD      HL, (DISP)
         LD      DE, DISPBF+88   ;Check the numbers of character   ---- page 48 ----
+                                ;in input buffer.
+                                ;The numbers of input characters
+                                ;is limited to 49.
+        AND     A
+        SBC     HL,DE
+        JR      NC,RDLOOP
+        CP      K_TAB           ;Check TAB key .
+        JR      NZ ,NOTTAB
+        LD      A,09            ;09 is the ASC II code for
+                                ;TAB key .
+NOTTAB: :
+        CALL    CHRWR
+        JR      RDLOOP
+RD_END:
+        LD      HL, (OUTPTR)
+        LD      (HL),A          ; Store 0DH .
+        LD      DE, (INPTR)
+        SBC     HL,DE           ; zero flag.
+        INC     HL
+        LD      A,L
+        LD      (COUNT) ,A      ; Set /COUNT/
+        RET
+LEFT:                           ;Backspace key service routine.
+        LD      HL, (INPTR)
+        LD      DE, (OUTPTR)
+        AND     A
+        SBC     HL,DE
+        JR      NC,RDLOOP       ; Ignore if exceeding LEFT end.
+        EX      HL,DE
+        DEC     HL              ;Decrease the pointer of
+                                ;input buffer by one.
+        LD      (OUTPTR) ,HL
+        LD      A, (HL)
+        CP      09
+        JR      Z,B_TAB
+        CALL    B_SP
+        JR      RDLOOP
+B_TAB:
+        CALL    B_SP
+        CALL    TAB? ;Check if cursor at TAB position.
+        JR      Z,B TABL1
+        LD      HL, (DISP)
+        DEC     HL
+        LD      A, (HL)
+        DEC     HL
+        AND     (HL)
+        INC     A
+        JR      Z,B_TAB
+B_TAB1:
+        LD      HL, (OUTPTR)
+B_TAB2:
+        DEC     HL
+        LD      A, (HL) -
+        CP      ' '
+        JP      NZ ,RDLOOP
+        CALL    TAB?
+        JP      Z,RDLOOP
+        LD      A,' '           ;                 ---- page 49 ----
+        CALL    CONVER
+        JR      B_TAB2
+B_SP:                           ;Clear the rightmost patterns
+                                ;in display buffer.
+        PUSH    HL
+        CALL    DEC_SP
+        DEC     HL
+        DEC     HL
+        DEC     HL
+        LD      (DISP) , HL
+        CALL    CURSOR ,
+        POP     HL
+        RET
+;
+;**************************************************************
+; Function: Get cursor message.
+; Input: (DISP) -- Point to the result address in display buffer.
+; Output: The first byte of cursor in (DISP) and the second
+;         byte of cusor in (DISP)+1
+;        (DISP) <- (DISP) The content of (DISP) is unchanged.
+; Reg affected: AF
+; Call: CONVER
 
+CURSOR:
+        LD      A,95BH          ; PROMPT
+CCURSOR:                        ; CALL HERE IF CHANGE PROMPT
+        CALL    CONVER
+        PUSH    HL
+        LD      HL, (DISP)
+        DEC     HL
+        DEC     HL
+        LD      (DISP) ,HL
+        POP     HL
+        RET
+;
+;**************************************************************
+; Function: Convert binary data in HL to ASC II code and
+; display patterns.
+; Input: HL -~ Two bytes of hexadecimal values in HL.
+; (OUTPTR) -~ Point to the result address in input buffer.
+; (DISP) -- Point to the result address in display buffer.
+; Output: Four ASC II code in (OUTPTR) ~ (OUTPTR)+3
+; Eight bytes of display pattern in (DISP) ~ (DISP)+7
+; (OUTPTR) <= (OUTPTR)+4
+; (DISP) <- (DISP)+8
+; Reg affected: AF
+; Call: HEX2
+
+HEXX:
+        LD      A,H
+        ALL     HEX2
+        LD      A,L
+        CALL    HEX2
+        RET
+;
+;**************************************************************
+; Function: Convert binary datas in HL to ASC II codes and
+; display patterns.                                    ---- page 50 ----
+2901 ; Call routint SPACE] to insert a space.
+29892 ; Input: Same as HEXX
+29863 ; Output: Five ASC II codes in (OUTPTR) - (OUTPTR)+4 .
+2904 ; Ten bytes of display pattern in (DISP) ~ (DISP)+8 .
+2905 ; (OUTPTR) <-— (OUTPTR)+5
+2986 ; (DISP) <= (DISP)+19
+2997 ; Reg affected: AF
+2908 ; Call: HEXX SPACE] .
+2909
+2910 HEX4:
+GA92 CD89@A 2911 CALL HEXX
+QA95 3E28 2912 SPACE1 LD iy”
+GA97 C3249 2913 JP CHRWR
+2914 ;
+;**************************************************************
+; Function: Convert binary data to ASC II code and
+; display patterns.
+; Input: A -- a byte in A register.
+;             (OUTPTR) -- Point to the result address in input buffer.
+;             (DISP) -- Point to the result address in display buffer.
+; Output: The first ASC II code in (OUTPTR) and the second
+;         ASC II code in (OUTPTR)+1 . Display patterns for
+;         four bytes . The first byte in (DISP) and the
+;         second byte in (DISP)+1 ,and so on.
+;         (OUTPTR) <- (OUTPTR)+2
+;         (DISP) <- (DISP)+4
+; Reg affected: AF
+; Call: HEX1
+
+HEX2:
+        PUSH    HL
+        LD      HL, TEMP
+        LD      (HL) ,A
+        XOR     A
+        RLD
+        CALL    HEX1
+        XOR     A
+        RLD 
+        CALL    HEX1
+        POP     HL
+        RET
+;
+;**************************************************************
+; Function: Convert binary data to ASC II code and display
+; pattern.
+; Input: A -- LSB 4 bits contains the binary data.
+;             (OUTPTR) -- Point to the result address in input buffer.
+;             (DISP) -- Point to the result address in display buffer.
+; Output: ASC II code in (OUTPTR).
+;         Pattern for two bytes. The first byte in (DISP)
+;         and the second byte in (DISP)+1 .
+;         (OUTPTR) <- (OUTPTR)+1
+;         (DISP) <- (DISP)+2
+; Reg affected: AF
+; Call: CHRWR
+
+HEX1:
+        ADD     A,'0'           ;                      ---- page 51 ----
+        CP      '9'+1
+        JR      C,HHH
+        ADD     A,7
+HHH:
+        JP      CHRWR
+;
+;**************************************************************
+; Function: Convert hexadecimal values in HL to corresponding
+;           decimal format (in ASC II CODE format).
+; Input: HL -- Hexadecimal values to be changed.
+;        (OUTPTR) -- Point to the result address in input buffer.
+;        (DISP) -- Point to the result address in display buffer.
+; Output: (OUTPTR) <- (OUTPTR) +? :
+;         (DISP) <- (DISP)+2*?
+; Reg affected: AF BC DE HL IY .
+; Call: CHRWR
+
+DECIMAL:
+
+        LD      IY,TENS         ; Table of ten's powers.
+        LD      B,3             ; Output three digits.
+        Lay     C,0             ; Zero supress flag.
+CLOOP:
+        LD      E, (TY)
+        INC     IY
+        LD      D, (IY)
+        INC     IY
+        XOR     A
+DECLOOP:
+        SBC     HL,DE
+        JR      C,ADDBACK
+        INC     A
+        JR      DECLOOP
+ADDBACK:
+        ADD     HL,DE
+        CALL    SUPRESS
+        DJNZ    CLOOP
+        RET
+SUPRESS:
+        AND     A
+        JR      Z,YES           ; If zero then ckeck zero
+                                ;supress flag.
+        LD      C,A             ; Else
+        ADD     A,30H           ; Convert to ASC II code format
+        JP      CHRWR           ; and output.
+YES_0:
+        LD      A,C
+        AND     A
+        JR      Z,BLANK0        ; Supress leading zero .
+PRINTS:
+        LD      A,C
+        JP      CHRWR
+BLANK@:
+        LD      A,B             ; Still check for last digit,
+        DEC     A
+        JR      Z,PRINT0        ; If last digit then print ‘'g'
+        LD      A," !
+        JP      CHRWR           ;                      ---- page 52 ----
+3017
+;**************************************************************
+3019 ; Function: Convert ASC II codes to corresponding hexadecimal
+3820 ; values until. met none hexadecimal digit.
+3021 ; The return value is stored in HL.
+3022 ; Input: DE -~ Point to the first location of ASC II code
+3023 ; to be changed.
+3924 ; Output: HL -~ Return values (hexadecimal digits).
+3025 ; (HEXFLAG) is set if there exists a digit within
+3026 ; (‘A'..'F') or the last none hexadecimal character
+3027 ; is 'H' .
+3628 ; Reg affected: AF BC DE HL.
+3029 ; Call: ONE
+3030
+3031 HEXBIN:
+
+        XOR     A
+        LD      (HEXFLAG) ,A
+        LD      B,A
+        LD      H,A
+        LD      L,A 
+HBLOOP:
+        LD      A, (DE)
+        CALL    ONE
+        JR      C,H?
+        ADD     HL, HL          ; (HL]=16* [HL]
+        OADD    HL,HL
+        ADD     HL,HL
+        ADD     HL, HL
+        LD      C,A
+        ADD     HL, BC
+        INC     DE
+        JR      HBLOOP
+H?:
+        LD      A, (DE)
+        CP      'H'
+        RET     NZ
+        INC     DE
+        LD      (HEXFLAG) ,A
+        LD      A, (DE)
+        RET
+
+
+;
+;**************************************************************
+; Function: Convert a byte (ASC II code) in A register to
+;           hexadecimal digit. :
+; Input: A -- ASC II code.
+; Output: A -- Hexadecimal values.
+;         Carry flag = 1 If the data is not a hexadecimal digit.
+;         (HEXFLAG) is not zero If the content of A within ‘A'
+;         and 'F',
+; Reg affected: AF
+; Call: None
+
+ONE:
+        CP      'F'+1
+        CCF                     ;                      ---- page 53 ----
+        RET     C
+        SUB     '0'
+        RET     C
+        CP      10
+        CCF
+        RET     NC
+        SUB     7
+        CP      18
+        RET     C
+        LD      (HEXFLAG) ,A
+        RET
+;
+;**************************************************************
+; Function: Convert ASC II codes to corresponding decimal values
+; in binary until met non decimal digits.
+; Input: DE -- Point to the first ASC II code (Decimal format)
+; to be changed.
+; Output: HL ~- Return values (Decimal digits).
+; Reg affected: AF BC DE HL.
+; Call: None
+
+DECBIN:
+
+        LD      HL,0
+        LD      A, (DE)
+NDIGIT:
+        SUB     '0'
+        RET     C
+        CP      10
+        RET     NC
+        ADD     HL,HL ; [HL]=19* {HL]
+        LD      B,H
+        LD      C,L
+        ADD     HL,HL
+        ADD     HL,HL
+        ADD     HL,BC
+        LD      B,0
+        LD      C,A
+        ADD     HL,BC
+        INC     DE
+        LD      A, (DE)
+        JR      NDIGIT
+;
+;**************************************************************
+; Function: Skip TABs and BLANKs.
+; Input: HL -- Address to be check.
+; Output: HL <- HL+? (? is the numbers of TAB and BLANK).
+;                     and (HL) is not TAB or BLANK.
+;         A <= (HL)
+;         Carry flag = 0 If (HL) is between 'A' and 'Z'.
+; Reg affected: AF HL .
+; Call: None
+
+SKIP:
+        LD      A, (HL)
+        CP      ' '
+        JR      2,SK1
+        CP      09H             ; TAB                  ---- page 54 ----
+        RET     NZ
+SK1:
+        INC     HL
+        JR      SKIP
+A_Z?:
+; RETURN C-FLAG IF [A] IS NOT WITHIN {'A'..‘Z'}
+        CP      'A'
+        RET     C
+        CP      'Z'+1
+        CCF
+        RET
+
+;KEY CODE FOR DEPRESSED KEY
+KEYTAB:
+KB      DEFB    31H             ;1
+K1      DEFB    41H             ;A
+K2      DEFB    20H             ; SPACE
+k3      DEFB    32H             ;2
+k4      DEFB    53H             ;S
+K5      DEFB    5FH             ;<--
+K6      DEFB    33H             ;3
+k7      DEFB    44H             ;D
+K8      DEFB    68H             ;-~>
+k9      DEFB    34H             ;4
+KA      DEFB    46H             ;F
+KB      DEFB    69H             ;DOWN ARROW
+KC      DEFB    35H             ;5
+KD      DEFB    47H             ;G
+KE      DEFB    5EH             ;UP ARROW
+KF      DEFB    36H             ;6
+K10     DEFB    48H             ;H
+K11     DEFB    0DH             ;CR
+K12     DEFB    37H             ;7
+K13     DEFB    4AH             ;J
+K14     DEFB    2FH             ;/
+K15     DEFB    38H             ;8
+K16     DEFB    4BH             ;K
+K17     DEFB    3CH             ;<
+K18     DEFB    39H             ;9
+K19     DEFB    4CH             ;L
+KK3E    DEFB    3EH             ;>
+K1B     DEFB    30H             ;8
+KIC     DEFB    3AH             ;2
+KID     DEFB    7BH             ;UNUSED
+KIE     DEFB    51H             ;Q
+KIF     DEFB    5AH             ;Z
+KK12    DEFB    2DH             ;-
+K21     DEFB    57H             ;W
+K22     DEFB    58H             ;X
+KK13    DEFB    3BH             ;;
+K24     DEFB    45H             ;E
+K25     DEFB    43H             ;C
+KK19    DEFB    4QH             ;@
+K27     DEFB    52H             ;R
+K28     DEFB    56H             ;V
+KK14    DEFB    5BH             ;
+K2A     DEFB    54H             ;T
+K2B     DEFB    42H             ;B                     ---- page 55 ----
+KK15    DEFB    2BH             ;+
+K2D     DEFB    59H             ;Y
+K2E     DEFB    4EH             ;N
+KK24    DEFB    3DH             ;=
+K30     DEFB    55H             ;U
+K31     DEFB    4DH             ;M
+K32     DEFB    7BH             ;UNUSED
+K33     DEFB    49H             ;I
+K34     DEFB    2CH             ;,
+K35     DEFB    7BH             ;UNUSED
+K36     DEFB    4FH             ;O
+K37     DEFB    2EH             ;.
+K38     DEFB    7BH             ;UNUSED
+K39     DEFB    50H             ;P
+K3A     DEFB    3FH             ;?
+K7B     DEFB    7BH             ;UNUSED
+RTABLE:
+        DEFB    41H             ;A
+        DEFB    46H             ;F
+        DEFB    42H             ;B
+        DEFB    43H             ;C
+        DEFB    44H             ;D
+        DEFB    45H             ;E
+        DEFB    48H             ;H
+        DEFB    4CH             ;L
+        DEFB    6GH             ;A'
+        DEFB    61H             ;F'
+        DEFB    62H             ;B'
+        DEFB    63H             ;c'
+        DEFB    64H             ;D'
+        DEFB    65H             ;E'
+        DEFB    66H             ;H'
+        DEFB    67H             ;L'
+        DEFB    49H             ;I
+        DEFB    58H             ;X
+        DEFB    49H             ;I
+        DEFB    59H             ;Y
+        DEFB    53H             ;S
+        DEFB    50H             ;P
+        DEFB    50H             ;P
+        DEFB    43H             ;C
+        DEFB    49H             ;I
+        DEFB    46H             ;F
+SEGTAB:
+        DEFW    0FFFFH          ;SPACE
+        DEFW    0F1FEH          ;!
+        DEFW    0F7DFH          ;"
+        DEFW    0FC31H          ;#
+        DEFW    0FC12H          ;$
+        DEFW    0C31BH          ;%
+        DEFW    0E724H          ;&
+        DEFW    0FBFFH          ;!
+        DEFW    0EBFFH          ;(
+        DEFW    0D7FFH          ;)
+        DEFW    0CO3FH          ;*
+        DEFW    0FC3FH          ;+
+        DEFW    0DFFFH          ;,
+        DEFW    0FF3FH          ;-                     ---- page 56 ----
+        DEFW    0BFFFH          ;.
+        DEFW    0DBFFH          ;/
+        DEFW    0DBC0H          ;0
+        DEFW    0FCFFH          ;1
+        DEFW    0FF24H          ;2
+        DEFW    0FF30H          ;3 
+        DEFW    0FF19H          ;4
+        DEFW    0F772H          ;5
+        DEFW    0FF02H          ;6
+        DEFW    0FFF8H          ;7
+        DEFW    9FF00H          ;8
+        DEFW    0FF19H          ;9
+        DEFW    0F7FH           ;:
+        DEFW    0DFBFH          ;;
+        DEFW    0DBF7H          ;<
+        DEFW    0FF37H          ;=
+        DEFW    0E7F7H          ;>
+        DEFW    0FD7CH          ;?
+        DEFW    0FDAGH          ;@
+        DEFW    0FF08H          ;A
+        DEFW    0FC76H          ;B
+        DEFW    0FFC6H          ;C
+        DEFW    0FCFGH          ;D
+        DEFW    0FF06H          ;E
+        DEFW    0FF0EH          ;F
+        DEFW    0FF42H          ;G
+        DEFW    0FFO9H          ;H
+        DEFW    0FCF6H          ;I
+        DEFW    0FFE1H          ;J
+        DEFW    0EBSFH          ;K
+        DEFW    0FFC7H          ;L
+        DEFW    0F3C9H          ;M
+        DEFW    0E7C9H          ;N
+        DEFW    0FFCGH          ;O
+        DEFW    0FFOCH          ;P
+        DEFW    0EFCOH          ;Q
+        DEFW    0EF0CH          ;R
+        DEFW    0FF12H          ;s
+        DEFW    0FCFEH          ;T
+        DEFW    0FFC1H          ;U
+        DEFW    0DBCFH          ;V
+        DEFW    0CFC9H          ;W
+        DEFW    0C3FFH          ;X
+        DEFW    0F1FFH          ;Y
+        DEFW    0DBF6H          ;Z
+        DEFW    0CFFFH          ;^
+        DEFW    0E7FFH          ;/
+        DEFW    0FFF0H          ;]
+        DEFW    0CDFFH          ;^
+        DEFW    0EB7FH          ;<
+        DEFW    0BF08H          ;A'
+        DEFW    0BF0EH          ;F'
+        DEFW    0BC70H          ;B'
+        DEFW    0BFC6H          ;C'
+        DEFW    0BCFOH          ;D'
+        DEFW    0BF06H          ;E'
+        DEFW    0BF09H          ;H'
+        DEFW    0BFC7H          ;L'                    ---- page 57 ----
+SHIFTT:        
+        DEFB    3CH             ;<
+        DEFB    0FFH
+        DEFB    3EH             ;>
+        DEFB    0FFH
+        DEFB    2AH             ;*
+        DEFB    21H             ;!
+        DEFB    22H             ;"
+        DEFB    23H             ;#
+        DEFB    24H             ;$
+        DEFB    25H             ;%
+        DEFB    26H             ;&
+        DEFB    27H             ;'
+        DEFB    28H             ;(
+        DEFB    29H             ;)
+        DEFB    3BH             ;;
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    2FH             ;/
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    2DH             ;-
+        DEFB    0FFH
+        DEFB    5BH             ;^
+        DEFB    40H             ;@
+        DEFB    0FFH
+        DEFB    0FFH
+        DEFB    3DH             ;=
+        DEFB    2BH             ;+
+MPFII:
+        DEFM    '*****MPF'
+        DEFB    2DH             ;-
+        DEFM    'I'
+        DEFB    2DH             ;-
+        DEFM    'PLUS*****'
+        DEFB    0DH
+ERR_SP:
+        DEFM    'ERROR'
+        DEFB:   2DH             ;_
+        DEFM    'sp'
+        DEFB    0DH
+SYS_SP:
+        DEFM    'SYS'
+        DEFB    2DH             ;_
+        DEFM    'SP'
+        DEFB    0DH
+PRTON:
+        DEFM    'PRT ON'
+        DEFB    0H              ;                      ---- page 58 ----
+PRTOFF:
+        DEFM    'PRT OFF'
+        DEFB    0DH
+RAM2K VALUE SET:
+        DEFW    0F800H          ;SET EDITOR LIMITS.
+        DEFW    0FCFFH
+        DEFW    0FE00H          ;SET SYMBOL LIMITS.
+        DEFW    0FEA0H
+        DEFW    0FDOGH          ;SET OBJECT LIMITS.
+        DEFW    0FDFFH
+RAM4K_VALUE_SET:
+        DEFW    0FA00H          ;SET EDITOR LIMITS.
+        DEFW    0FAFFH
+        DEFW    0FD00H          ;SET SYMBOL LIMITS.
+        DEFW    0FEAGH
+        DEFW    0FBOGH          ;SET OBJECT LIMITS.
+        DEFW    0FCFFH
+TENS                            ; TABLE USED BY 'TOASCII' TO CONVERT
+                                ; BINARY TO DECIMAL DIGITS
+        DEFW    100
+        DEFW    10
+        DEFW    1
+        DEFM    ' ERRORS'
+        DEFB    0DH             ;                      ---- page 59 ----
+;*HEADING RAM STORAGE .
+;*******************************;
+;*                             *;
+;*        STORAGE              *;
+;*      FOR MONITOR            *;
+;*                             *;
+;*******************************;
+;
+; 
+        ORG     0FEA0H
+USERSTK:
+        DEFS    36H
+        ORG     0FED0H
+SYSSTK:
+STEPBF  DEFS    9
+TEXT_F                          ;ASSEMBLER SOURCE FROM.
+EDIT_START_ADDR DEFS    2       ;EDITOR BOTTOM.
+TEXT_T                          ;ASSEMBLER SOURCE TO.
+END_DATA_ADDR   DEFS    2       ;EDITOR TOP.
+END_LN_NO       DEFS    2       ;EDITOR LAST LINE NUMBER.
+RAM_START_ADDR  DEFS    2       ;EDITOR LOW LIMIT.
+EDIT_END_ADDR   DEFS    2       ;EDITOR HIGH LIMIT.
+ST_F            DEFS    2       ;ASSEMBLER SYMBOL TABLE FROM.
+ST_T            DEFS    2       ;ASSEMBLER SYMBOL TABLE TO.
+OBJ_F           DEFS    2       ;ASSEMBLER OBJECT CODE FROM.
+OBJ_T           DEFS    2       ;ASSEMBLER OBJECT CODE TO.
+END_ADDR        DEFS    2       ;Contains the limit address
+                                ;of ccommand INSERT or DELETE .
+BRAD    DEFS    2               ;Breakpoint address .
+BRDA    DEFS    1               ;Data of breakpoint address .
+POWERUP DEFS    1               ;Power_up initialization .
+TEST    DEFS    1               ;Bit 7 -- set when illegal key
+                                ;         is entered.
+STEPFG  DEFS    1               ;STEP mode test flag .
+PRTFLG  DEFS    1               ;Printer toggle switch .
+BEEPSET DEFS    1               ;Beep sound toggle switch.
+FBEEP   DEFS    1               ;Freqency of BEEP .
+TBEEP   DEFS    2               ;Time duration of BEEP .
+MADDR   DEFS    2               ;Temporary storage .
+TEMP1   DEFS    4               ;See comments on command STEP .
+ATEMP   DEFS    1               ;Temporary storage .
+HLTEMP  DEFS    2               ;Temporary storage .
+IMIAD   DEFS    2               ;Contains the address of Opcode ‘FF’
+                                ;service routine.( RST 38H, mode
+                                ;1 interrupt, etc).
+RCOUNT  DEFS    1               ;Register counts in register table.
+INPBF   DEFS    48              ;Input buffer .
+DISPBF  DEFS    82              ;Display buffer .
+GETPT   DEFS    2               ;Temporary storage for GETHL .
+TYPEFG  DEFS    1               ;Type test flag.
+CRSET   DEFS    1               ;Display delay time .
+OUTPTR  DEFS    2               ;Input buffer pointer.
+DISP    DEFS    2               ;Display buffer pointer .
+INPTR   DEFS    2               ;Limit of input buffer pointer .
+REGBF:
+USERAF  DEFS    2
+USERBC  DEFS    2
+USERDE  DEFS    2               ;                      ---- page 60 ----
+USERHL  DEFS    2
+UAFP    DEFS    2               ;AF'
+UBCP    DEFS    2               ;BC'
+UDEP    DEFS    2               ;DE'
+UHLP    DEFS    2               ;HL'
+USERIX  DEFS    2
+USERIY  DEFS    2
+USERSP  DEFS    2
+USERPC  DEFS    2
+USERIF  DEFS    2
+BLANK   EQU     6FD0H
+K_TAB   EQU     68H             ;TAB CODE
+TVSET   EQU     0A000H          ;The first memory location
+                                ;of TV interface board .
+TV      EQU     0A0011H         ;The starting address of monitor
+                                ;program on TV interface board .
+BASICC EQU      20290H          ;The starting address of
+                                ;reenter BASIC .       ---- page 61 ----
