@@ -3258,8 +3258,8 @@ SEGTAB:
         DEFW    0FF02H          ;6
         DEFW    0FFF8H          ;7
         DEFW    0FF00H          ;8
-        DEFW    0FF19H          ;9
-        DEFW    0F7FH           ;:
+        DEFW    0FF10H          ;9
+        DEFW    0EF7FH           ;:
         DEFW    0DFBFH          ;;
         DEFW    0DBF7H          ;<
         DEFW    0FF37H          ;=
@@ -3267,7 +3267,7 @@ SEGTAB:
         DEFW    0FD7CH          ;?
         DEFW    0FDA0H          ;@
         DEFW    0FF08H          ;A
-        DEFW    0FC76H          ;B
+        DEFW    0FC70H          ;B
         DEFW    0FFC6H          ;C
         DEFW    0FCF0H          ;D
         DEFW    0FF06H          ;E
@@ -3464,18 +3464,18 @@ TV:     EQU     0A001H          ;The starting address of monitor
 BASICC: EQU     2020H           ;The starting address of
                                 ;reenter BASIC .       ---- page 61 ----
 
-; Assembly additions for z80asm:
-TEMP:   EQU     0000H
-HEXFLA: EQU     0000H
-COUNT:  EQU     0000H
-CHK40:  EQU     0912H
-MTPPRT: EQU     0000H
-ERRSMSG:EQU     0CAFH
-MDUMP:  EQU     0000H
-TEST5:  EQU     0000H
-PRT_MPF:EQU     0000H
-BASICZ: EQU     0000H
-REEDIT: EQU     0000H
-EDIT:   EQU     0000H
-LASM:   EQU     0000H
-ASM:    EQU     0000H
+; Assembly additions for z80asm, values retrieved from ROM disassembly:
+TEMP:   EQU     0ffach; 0000H
+HEXFLA: EQU     0fffbh; 0000H
+COUNT:  EQU     0ffabh; 0000H
+CHK40:  EQU     00912H
+MTPPRT: EQU     06a40h; 0000H
+ERRSMSG:EQU     00CAFH
+MDUMP:  EQU     06500h; 0000H
+TEST5:  EQU     0ffcch; 0000H
+PRT_MPF:EQU     06990h; 0000H
+BASICZ: EQU     02000h; 0000H
+REEDIT: EQU     00cf2h; 0000H
+EDIT:   EQU     00ce6h; 0000H
+LASM:   EQU     01052h; 0000H
+ASM:    EQU     010cch; 0000H
