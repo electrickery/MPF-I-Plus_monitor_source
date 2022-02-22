@@ -11,3 +11,9 @@ tesseract can do better:
     tesseract   'MPF-IP MONITOR SOURCE PROGRAM LISTING_38.jpg' page35 --psm 4
 
 This forces one column mode. '--psm 6' works even better.
+
+Changes made to the code for z80asm:
+
+* added a colon to all labels
+* replaced the '?' in some labels with a '_Q'
+

@@ -12,30 +12,30 @@
 ;
 ;
 ;
-P82551	EQU	83H		;8255 I control port
-DIG1	EQU	80H		;8255 I port A
-DIG2	EQU	81H		;8255 I port B
-DIG3	EQU	82H		;8255 I port C
-P82552	EQU	93H		;8255 II Control port
-SEG1	EQU	90H		;8255 II port A
-SEG2	EQU	91H		;8255 II port B
-KIN		EQU	92H		;8255 II port C
-PWCODE	EQU	0A5H	;Power up code
-ZSUM	EQU	0E0H	;This will make the sum of all
-					;monitor codes to be zero.
+P82551: EQU	83H     ;8255 I control port
+DIG1:   EQU	80H     ;8255 I port A
+DIG2:   EQU	81H     ;8255 I port B
+DIG3:   EQU	82H     ;8255 I port C
+P82552: EQU	93H     ;8255 II Control port
+SEG1:   EQU	90H     ;8255 II port A
+SEG2:   EQU	91H     ;8255 II port B
+KIN:    EQU	92H     ;8255 II port C
+PWCODE: EQU	0A5H    ;Power up code
+ZSUM:   EQU	0E0H    ;This will make the sum of all
+                    ;monitor codes to be zero.
 
 ; The following EQUATES are used for timing. Their values
 ; depend on the CPU clock frequency. (In this version, the
 ; crystal freqency is 1.79MHz.)
 
-COLDEL	EQU	80		; Column delay for routine
-					; SCAN and SCAN1.
-F1kHZ	EQU	65		; Delay count for 1K Hz square wave,
-					; used by routine TONE1K.
-F2KHZ	EQU	31		; Delay count for 2K Hz square wave,
-					; used by routine TONE2K.
-MPERIOD	EQU	32		; 1KHz and 2KHz threshold used by
-					; tape input routine PERIOD.
+COLDEL: EQU     80  ; Column delay for routine
+                    ; SCAN and SCAN1.
+F1KHZ:  EQU     65  ; Delay count for 1K Hz square wave,
+                    ; used by routine TONE1K.
+F2KHZ:  EQU     31  ; Delay count for 2K Hz square wave,
+                    ; used by routine TONE2K.
+MPERIOD:EQU     32  ; 1KHz and 2KHz threshold used by
+                    ; tape input routine PERIOD.
 
 ; The following EQUATEs are used for tape modulation.
 ; It the quality of tape recoder is good, the user may
@@ -48,14 +48,14 @@ MPERIOD	EQU	32		; 1KHz and 2KHz threshold used by
 ; compatible in each case, because only the ratio is
 ; detected in the Tape read.
 
-ONE_1K	EQU	4
-ONE_2K	EQU	4
-ZERO_1K	EQU	2
-ZERO_2K	EQU	8
+ONE_1K: EQU     4
+ONE_2K: EQU     4
+ZERO_1K:EQU     2
+ZERO_2K:EQU     8
 
 ;**************************************************************
 ;I/0 port assignment: (8255 I)
-;                                                  ----P2----
+;                                                             ----P2----
 ; port A (address 80H): The first eight digits of display
 ; bit0--digit 1
 ; bit1--digit 2
@@ -306,7 +306,8 @@ RESET2:
         JR      SETST0
 ;
 ;**************************************************************
-NMI:    ORG     66H
+        ORG     66H
+NMI:
 
 ; Entry point of non maskable interrupt. NMI will occur
 ; when user's program is breaked.
@@ -320,9 +321,9 @@ NMI:    ORG     66H
         LD      (DIG2),A
         LD      (DIG3),A
         OUT     (KIN),A
-        LD      A,ATEMP         ;Restore A register
+        LD      A,(ATEMP)       ;Restore A register
 RGSAVE: LD      (HLTEMP),HL     ;Save register HL
-        LD      POP HL          ;Get return address from stack
+        POP     HL              ;Get return address from stack
         LD      (USERPC),HL     ;Set user's PC to return
                                 ;address
         LD      HL,(HLTEMP)     ;Restore HL register
@@ -378,7 +379,7 @@ SETIF:  LD      (USERIF),A
 ; overlayed, then display SYS-SP. This checking
 ; is done by the following instructions.
 
-        LD      DE,-USERSTK+1
+        LD      DE, USERSTK+1
         ADD     HL,DE
         JR      C,SETST3
 SETST0:
@@ -477,51 +478,51 @@ BACK:
 
 KEYEXEC:
         CP      69H
-        JR      Z,FOR       ;DOWN ARROW.
+        JR      Z,FOR           ;DOWN ARROW.
         CP      5EH
-        JR      Z,BACK      ;UP ARROW.
+        JR      Z,BACK          ;UP ARROW.
         CP      'M'         
-        JR      Z,MEMEXEC   ;MEMORY DISPLAY AND MODIFY.
+        JP      Z,MEMEXC        ;MEMORY DISPLAY AND MODIFY.
         CP      'R'
-        JR      Z,REGEXC    ;REGISTER DISPLAY AND MODIFY.
+        JP      Z,REGEXC        ;REGISTER DISPLAY AND MODIFY.
         CP      'L'
-        JR      Z,LOAD      ;TAPE READ.
+        JP      Z,LOAD          ;TAPE READ.
         CP      'W'
-        JR      Z,DUMP      ;TAPE WRITE
+        JP      Z,DUMP          ;TAPE WRITE
         CP      'G'
-        JR      Z,GOEXEC    ;EXECUTION
+        JP      Z,GOEXEC        ;EXECUTION
         CP      'S'
-        JR      Z,STEP      ;SINGLE STEP.
+        JP      Z,STEP          ;SINGLE STEP.
         CP      'B'
-        JR      Z,BREAK     ;BREAK AT A SPECIFIED ADDRESS.
+        JP      Z,BREAK         ;BREAK AT A SPECIFIED ADDRESS.
         CP      'F'
-        JR      Z,FILLDA    ;FILL DATA.
+        JP      Z,FILLDA        ;FILL DATA.
         CP      'I'
-        JR      Z,INSET     ;INSERT A BLOCK OF DATA.
+        JP      Z,INSET         ;INSERT A BLOCK OF DATA.
         CP      'D'
-        JR      Z,DELETE    ;DELETE ONE BYTE OF DATA.
+        JP      Z,DELETE        ;DELETE ONE BYTE OF DATA.
         CP      'J'
-        JR      Z,JUMP      ;JUMP RELATIVE.
+        JP      Z,JUMP          ;JUMP RELATIVE.
         CP      1
-        JR      Z,ASM       ;ASSEMBLER (CONTROL A).
+        JP      Z,ASM           ;ASSEMBLER (CONTROL A).
         CP      0CH
-        JR      Z,LASM      ;LINE ASSEMBLER (CONTROL L).
+        JP      Z,LASM          ;LINE ASSEMBLER (CONTROL L).
         CP      2
-        JR      Z,BASIC3    ;ENTER BASIC (CONTROL B).
+        JR      Z,BASIC3        ;ENTER BASIC (CONTROL B).
         CP      3
-        JR      Z,BASIC3    ;REENTER BASIC (CONTROL C).
+        JR      Z,BASIC3        ;REENTER BASIC (CONTROL C).
         CP      4
-        JR      Z,DEASM3    ;DISASSEMBLER (CONTROL D).
+        JR      Z,DEASM3        ;DISASSEMBLER (CONTROL D).
         CP      5
-        JR      Z,EDIT      ;EDITOR (CONTROL E).
+        JP      Z,EDIT          ;EDITOR (CONTROL E).
         CP      7
-        JR      Z,BEEP      ;BEEP SOUND CONTROL (CONTROL G).
+        JR      Z,BEEP_CONTROL  ;BEEP SOUND CONTROL (CONTROL G).
         CP      12H
-        JR      Z,REEDIT    ;REEDIT (CONTROL R).
+        JP      Z,REEDIT        ;REEDIT (CONTROL R).
         CP      10H
-        JR      Z,PRT_CONTROL;PRINTER CONTROL (CONTROL P).  ---- page 9 ----
+        JR      Z,PRT_CONTROL   ;PRINTER CONTROL (CONTROL P).  ---- page 9 ----
         CP      0DH
-        JP      Z,CR3       ;LINEFEED.
+        JP      Z,CR3           ;LINEFEED.
         
 ;**************************************************************
 
@@ -618,11 +619,11 @@ INI:
 ;The next7 instructionscheck IC onU4isRAMornot.
 
         LD      HL,0F7FFH
-RAMT1   LD      BC,8000H
-RAMT2   CALL    RAMCHK
+RAMT1:   LD      BC,8000H
+RAMT2:   CALL    RAMCHK
         JR      Z,TNEXT
         JR      INI8
-TNEXT   CPD
+TNEXT:   CPD
         JP      PE,RAMT2
 
 ;Thenext.four instructionssetthedefaultvaluesaccording
@@ -630,7 +631,7 @@ TNEXT   CPD
 
         LD      HL,RAM4K_VALUE_SET
 INI6:
-        LD      DE,RAMSTARTADDR
+        LD      DE,RAM_START_ADDR
         LD      BC,12
         LDIR
         
@@ -677,13 +678,13 @@ INI3:   LD      (POWERUP),A ;Load power_up code into
                             ;uses the location to decide
                             ;whether a reset signal is
                             ;on power_up.
-        LD      HL,PBEEP
+        LD      HL,FBEEP
         LD      (HL),44H    ;Frequency of BEEP.
         INC     HL
         LD      (HL),2FH    ;Time duration of BEEP.
         INC     HL
         LD      (HL),0
-INI4:   LD      NMI
+INI4:   LD      HL,NMI
         LD      (IM1AD),HL  ;Set the service routine
                             ;of RST 38H to NMI ,which is the
                             ;nonmaskable interrupt service
@@ -717,7 +718,7 @@ INI7:
 
         CALL    CLRDSP
         LD      HL,INPBF+20
-        LD      (OUTPRT),HL
+        LD      (OUTPTR),HL
         LD      HL,DISPBF+40
         LD      (DISP),HL
         LD      HL,MPFII
@@ -777,7 +778,7 @@ SCAN2:
 ; 47=15.7*3).
 
 SCPRE:  LD      B,3
-        CALL    SCAN1           ;Get position code.
+SCNX:   CALL    SCAN1           ;Get position code.
         JR      NC,SCPRE        ;If any key is pressed,
                                 ;reload the debounce counter
                                 ;B by 3.
@@ -820,7 +821,7 @@ KCTRL:
 ;ExecutedbydepressinganykeywithSHIFTkeytogether.
 ;The key code is one byte stored in A register.
 
-KSHIFT;
+KSHIFT:
         POP     AF
         SUB     2CH
         JR      C,SCLOOP
@@ -863,7 +864,7 @@ SCAN1:
 ;I/O port are active low.
 
         SCF
-        EX      AF.AF'
+        EX      AF,AF'
         EXX
         
 ;Carry flag of F' is used to return the status of
@@ -886,10 +887,10 @@ SCAN1:
         LD      DE,0FFFEH       ;Activatethefirst digit.
         LD      L,D
         LD      H,20            ;20digits.
-KCOL:   LD      A,(IX)
+KCOL:   LD      A,(IX+0)
         OUT     (SEG1),A        ;Firstbytepattern.
         INC     IX
-        LD      A,(IX)
+        LD      A,(IX+0)
         OUT     (SEG2),A        ;2ndbytepattern.
         LD      A,E
         OUT     (DIG1),A        ;1-8digits
@@ -957,7 +958,7 @@ MEMEXC:
         LD      (TYPEFG),A      ;Setmemorytype.
         LD      A,(DE)
         CP      3AH             ;:
-        JP      Z,MMODIFY
+        JP      Z,MMODFY
         CP      2EH             ;.
         JP      Z,MDUMP1
         CP      2FH             ;/
@@ -965,7 +966,7 @@ MEMEXC:
         CALL    MEMEX3          ;Displayspecifiedmemory
                                 ;contents.
         CALL    HEXX
-P102    CALL    MEM3
+P102:   CALL    MEM3
         CALL    CR2
         RET
 
@@ -977,12 +978,12 @@ P102    CALL    MEM3
 ;BACKSPACEkey tocorrectthedata.
 
 MEMEX2:
-        CALL    ECHOCH          ;Echothe inputcharacterand
+        CALL    ECHO_CH          ;Echothe inputcharacterand
                                 ;prompt.
-MEMEX1  CALL    GET             ;Getastringofcharacters
+MEMEX1: CALL    GET             ;Getastringofcharacters
                                 ;andendtheinputwith <CR>.
         CALL    CHKINP          ;Checkhexadecimalvalues.
-        JR      C,MEMEXl        ;JumptoMEMEXliftheinput
+        JR      C,MEMEX1        ;JumptoMEMEXliftheinput
                                 ;data is illegal.      ---- page 17 ----
         CALL    CHKHEX          ;Get the hexadecimal address
                                 ;of the first of four memory
@@ -1029,7 +1030,7 @@ SET:
 ;<M>=<start>.<end><CR>   or
 ;<M>=<start>.<end> <linking address><CR>
 
-MDUMP:
+MDUMP1:
         CALL    PTEST
         RET     NZ
         LD      A,30H           ;Set memory dump type.
@@ -1052,11 +1053,11 @@ MMOVE:
         CALL    GETHL           ;Get the destination address.
         LD      (STEPBF+6),HL
         CALL    GMV
-        JR      CR3
+        JP      CR3
 
 ;**************************************************************
 
-GVM:
+GMV:
         LD      HL,STEPBF
         CALL    GETP            ;Load parameters from
                                 ;step buffer into registers.
@@ -1106,7 +1107,7 @@ DECDSP:                         ;Clear the rightmost display
                                 ;in DISLPAY buffer,The display
                                 ;pattern is usually a cursor.
         LD      IX,DISPBF
-DEC_SP  LD      A,0FFH
+DEC_SP: LD      A,0FFH
         LD      HL,(DISP)
         LD      (HL),A
         INC     HL
@@ -1120,15 +1121,15 @@ DEC_SP  LD      A,0FFH
 
 MFOR:                           ;Display next four memory
                                 ;contents.
-        LD      HL,(MADOR)
+        LD      HL,(MADDR)
         INC     HL
         INC     HL
         INC     HL
         INC     HL
-P101    LD      (MADDR),HL
+P101:   LD      (MADDR),HL
         LD      A,'M'
         CALL    ECHO_CH         ;Getpattern'<M>='
-        CALL    HEXX-
+        CALL    HEXX
         JP      P102
 MBACK:                          ;Display last four memory
                                 ;contents.
@@ -1205,8 +1206,8 @@ INSET3:
         LD      (STEPBF),HL
         INC     HL
         LD      (STEPBF+4),HL
-        LD      DE,(ENDADDR)
-        DEC     DE	-
+        LD      DE,(END_ADDR)
+        DEC     DE
         LD      (STEPBF+2),DE
         INC     DE
         AND     A
@@ -1357,10 +1358,10 @@ DISBR:  LD      HL,(BRAD)
 BREAK1:
         CALL    GET
         LD      A,(INPBF+9)
-        JR      Z,83            ;For <CR> condition.
+        JR      Z,B3            ;For <CR> condition.
         CP      'C'             ; For C condition.
         CALL    CLRB
-        JR      Z,83
+        JR      Z,B3
         LD      HL,INPBF+4
         CALL    CHKHE2          ;Get new breakpoint address
                                 ;stored into HL.
@@ -1387,7 +1388,7 @@ STEP:
                                 ;current address.
         CALL    MEMEX2          ;Get the specified address.
         LD      (USERPC),HL
-P111    LD      A,11101111B     ;This data will be output to
+P111:   LD      A,11101111B     ;This data will be output to
                                 ;port C of 8255 II to enable BREAK.
                                 ;It is done by routine PREOUT. ---- page 24 ----
         JR      PREOUT
@@ -1402,14 +1403,14 @@ P111    LD      A,11101111B     ;This data will be output to
 
 GOEXEC:
         CALL    ECHO_CH         ;Echo the input character with <G>=
-GOEXE1  CALL    GET             ;Get a string of characters
+GOEXE1: CALL    GET             ;Get a string of characters
                                 ;end the input with <CR> .
         LD      A,(INPBF+4)
         CP      0DH
         JR      Z,EXEC2         ;If zero ,then execute at
                                 ;the currentaddress.
         CALL    CHKHEX          ;Get specified address.
-        JR      C,GOEXEl        ;Jump to GOEXE1 if one of
+        JR      C,GOEXE1        ;Jump to GOEXE1 if one of
                                 ;the input datum is illegal.
         LD      (USERPC),HL
 EXEC2:
@@ -1459,8 +1460,8 @@ EIDI:
         POP     IX
         POP     IY
         LD      SP,(USERSP)         ;Restore user's SP.
-        LD      (USERAF+l),A
-        LD      A,(USERIF+l)        ;Restore user's I.
+        LD      (USERAF+1),A
+        LD      A,(USERIF+1)        ;Restore user's I.
         LD      I,A
         PUSH    HL                  ;The next 3 instructions
                                     ;push the address being
@@ -1483,8 +1484,8 @@ EIDI:
                             ;maskable interrupt will occur
                             ;5M1's after the OUT instruction.
         OUT     (KIN),A
-        LD      A,(USERAF+l)    ;1st M1.
-        JP      TEMPl+1 ;2nd M1,
+        LD      A,(USERAF+1)    ;1st M1.
+        JP      TEMP1+1 ;2nd M1,
                         ;Execute the two instructions
                         ;stored in RAM. They are:
                         ;   EI (or DI)      ;3rd M1
@@ -1513,8 +1514,8 @@ EIDI:
 ; Type :    -- Alter register contents.
 
 REGEXC:
-        CALL    ECHO CH ;Echo the input character with <R>=
-REGEX2  CALL    GET             ;Get a string of characters
+        CALL    ECHO_CH ;Echo the input character with <R>=
+REGEX2: CALL    GET             ;Get a string of characters
                                 ;end the input with<CR>.
         LD      HL,INPBF+3
         PUSH    HL
@@ -1539,7 +1540,7 @@ REGEX2  CALL    GET             ;Get a string of characters
         INC     HL
         LD      C,A
         LD      A,(HL)
-P105    CP      3AH             ;Check : condition
+P105:   CP      3AH             ;Check : condition
                                 ;If zero ,then change the content
                                 ;of a single byte register
                                 ;(i.e.,AFBCDEHLA'F'B'C'D'E'H'L'I)
@@ -1560,7 +1561,7 @@ P105    CP      3AH             ;Check : condition
         INC     HL
         LD      C,A
         LD      A,(HL)
-P106    CP      3AH
+P106:   CP      3AH
         JP      Z,RMODF1        ;Change the contents of two
                                 ;single byte register.
                                 ;(AF AF' IF).          ---- page 27 ----
@@ -1569,7 +1570,7 @@ P106    CP      3AH
                                 ;or a two byte register (
                                 ;IX IY SP PC).
         CP      0DH
-        JR      Z,RDISPLY       ;Display two single byte
+        JR      Z,RDSPLY       ;Display two single byte
                                 ;register or a register pair
                                 ;or a two byte register.
                                 
@@ -1603,7 +1604,7 @@ RDSPL0:
         JR      Z,REGALL        ;Jump to REGALL if the input
                                 ;register name is illegal.
         CALL    MEMEX3
-RDSPL6  LD      A,(RCOUNT)
+RDSPL6: LD      A,(RCOUNT)
         BIT     0,A
         JR      Z,RDSPL1
         DEC     HL
@@ -1614,7 +1615,7 @@ RDSPL6  LD      A,(RCOUNT)
                                 ;pair leader. (count of
                                 ;the lower one)
         LD      (RCOUNT),A
-RDSPL1  CALL    SPACE1          ;Insert a space.
+RDSPL1: CALL    SPACE1          ;Insert a space.
         LD      A,(HL)          ;Get the first register name.
         CALL    CHRWR
         INC     HL
@@ -1649,7 +1650,7 @@ RFOR:                           ;Display next four register contents.
         CP      24
         JR      Z,RBACK1
         JR      NC,RBACK2
-RFOR1   LD      (RCOUNT),A
+RFOR1:  LD      (RCOUNT),A
         LD      A,(STEPFG)      ;If the content of STEPBF is
                                 ;zero.
                                 ;it means MPF_IP executes STEP
@@ -1660,9 +1661,9 @@ RFOR1   LD      (RCOUNT),A
         LD  HL,(USERPC)
         CALL    HEX4
         JR      RFOR3
-RFOR2   LD      A,52H           ;Get pattern '<R>='
-        CALL    ECHOCH
-RFOR3   LD      HL,RTABLE
+RFOR2:  LD      A,52H           ;Get pattern '<R>='
+        CALL    ECHO_CH
+RFOR3:  LD      HL,RTABLE
         LD      A,(RCOUNT)
         ADD     A,L
         LD      L,A
@@ -1676,9 +1677,9 @@ RBACK:                          ;Display last four register
         CP      2
         JR      Z,RBACK1
         JR      C,RFOR1
-RBACK2  DEC     A
+RBACK2: DEC     A
         DEC     A
-RBACK1  DEC     A
+RBACK1: DEC     A
         DEC     A               ;                      ---- page 29 ----
         JR      RFOR1
         
@@ -1700,16 +1701,16 @@ RMODFY:
         BIT     0,C
         JR      Z,RODD
         DEC     DE
-RMODF2  LD      (DE),A
+RMODF2: LD      (DE),A
         JP      CR3
-RODD    INC     DE
+RODD:   INC     DE
         JR      RMODF2
-RMODF1  CALL    SEARC_REG
+RMODF1: CALL    SEARC_REG
         JR      Z,MEMDP3        ;Illegal register name.
         BIT     0,C
         JR      Z,RMODF3
         DEC     DE
-RMODF3  PUSH    DE
+RMODF3: PUSH    DE
         CALL    GETHL
         POP     DE
         LD      (DE),A
@@ -1727,7 +1728,7 @@ MEMDP2:
         CALL    CLEAR
         LD      HL,(USERPC)
         CALL    HEX4
-MEMDP3
+MEMDP3:
         JP      REGALL
 
 ;**************************************************************
@@ -1739,14 +1740,14 @@ MEMDP3
 ;                              buffer begining).
 ;          C -- Counts of register in RATBLE.          ---- page 30 ----
 
-SEARCREG:
-        LD      HL,RTABLEBC
+SEARC_REG:
+        LD      HL,RTABLE
         PUSH    BC
         XOR     A
         LD      C,A
         LD      A,D
         LD      B,25
-SERCH   CP      (HL)        ;Compare with the first
+SERCH:  CP      (HL)        ;Compare with the first
                             ;register name.
         JR      NZ,SERCH1
         LD      A,E
@@ -1759,7 +1760,7 @@ SERCH   CP      (HL)        ;Compare with the first
 
         JR      Z,SERCH2
         LD      A,D
-        JR      SEARCH4
+        JR      SERCH4
 SERCH2:
         LD      A,C
         POP     BC
@@ -1767,23 +1768,23 @@ SERCH2:
         LD      A,C
         CP      27H         ;Check ' (A' F' B' C' D' E' H' L')
         LD      C,B
-        JR      NZ,SEARCH3
+        JR      NZ,SERCH3
         LD      A,L
         ADD     A,8
         LD      L,A
         LD      A,C
         ADD     A,8
         LD      C,A
-SEARCH3:
+SERCH3:
         LD      A,C
-SEARCH5 LD      (RCOUNT) ,A
-        LD      D,REGBF
+SERCH5: LD      (RCOUNT) ,A
+        LD      DE,REGBF
         ADD     A,E
         LD      E,A
         RET
-SEARCH1 INC     HL
+SERCH1: INC     HL
         INC     C
-SEARCH4 DJNZ    SEARCH
+SERCH4: DJNZ    SERCH
         XOR     A
         AND     A
         POP     BC
@@ -1796,7 +1797,7 @@ SEARCH4 DJNZ    SEARCH
 ;
 GET:
         JP      C,RDLOOP      ;                        ---- page 31 ----
-GETT    CALL    READLN
+GETT:   CALL    READLN
         CALL    DECDSP
         RET
 ;
@@ -1804,9 +1805,9 @@ GETT    CALL    READLN
 ; TAPE WRITE:
 DUMP:
 
-        CALL    ECHO CH         ;Echo the input character
+        CALL    ECHO_CH         ;Echo the input character
                                 ;with <W>=
-DUMP1   CALL    GET             ;Get a string of characters
+DUMP1:  CALL    GET             ;Get a string of characters
                                 ;and end the input with <CR>
         CALL    CHKHEX          ;Get starting address.
         JR      C,DUMP1         ;Jump to DUMP] if the input
@@ -1816,7 +1817,7 @@ DUMP1   CALL    GET             ;Get a string of characters
         JR      C,DUMP1         ;dump to DUMP1 if the input
                                 ;datas are illegal.
         LD      (STEPBF+6) ,HL
-DUMP2   CALL    GETCHR          ;Get tape filename.
+DUMP2:  CALL    GETCHR          ;Get tape filename.
         LD DE,  STEPBF
         LD      BC,4
         LDIR
@@ -1843,8 +1844,8 @@ DUMP2   CALL    GETCHR          ;Get tape filename.
                                 ;ASSEMBLER.
         LD      BC,27
         CALL    TAPEOUT
-        LD      HL, 4906        ;Output 2K Hz square
-                                ;waves for 4868 cycles.
+        LD      HL, 4000        ;Output 2K Hz square
+                                ;waves for 4000 cycles.
                                 ;Middle sync. The filename of
                                 ;the file being read will be
                                 ;displayed in the interval.
@@ -1853,7 +1854,7 @@ DUMP2   CALL    GETCHR          ;Get tape filename.
                                 ;registers(Starting,ending and
                                 ;length).
         CALL    TAPEOUT         ;Output user's data
-        LD      HL, 4906        ;Output 499@ cycles    ---- page 32 ----
+        LD      HL, 4000        ;Output 4000 cycles    ---- page 32 ----
                                 ;of 2K Hz square wave.
                                 ; (Tail sync.)
         CALL    TONE2K
@@ -1876,19 +1877,19 @@ ERROR:
 ; Function: TAPE READ .
 
 LOAD:
-        CALL    ECHO CH         ;Echo the input character
+        CALL    ECHO_CH         ;Echo the input character
                                 ;with <L>=
         CALL    GET             ;Get a string of characters
                                 ;and end the input with <CR>.
-LEAD:   LD      A,16111111B     ;Decimal point.
+LEAD:   LD      A,10111111B     ;Decimal point.
         OUT     (SEG2) ,A       ;When secrching for filename
                                 ;the display is blank intially.
                                 ;If the data read from MIC is
-                                ;acceptable @ or 1,the display
+                                ;acceptable 0 or 1,the display
                                 ;becomes ' 
-        LD      A, OFFH
+        LD      A, 0FFH
         OUT     (SEG1),A
-        LD      HL,10690
+        LD      HL,1000
 LEAD1:  CALL    PERIOD          ;The return of PERIOD
                                 ;is in flag:
                                 ; NC -- tape input is 1K Hz
@@ -1918,20 +1919,20 @@ LEAD2:  CALL    PERIOD
         LD      HL,DISPBF+18
         LD      (DISP) ,HL
         LD      HL,STEPBF
-LOOP3   LD      A, (HL)
+LOOP3:  LD      A, (HL)
         CALL    CONVER
         INC     HL
-        DINZ    LOOP3
+        DJNZ    LOOP3
         LD      B,196           ;Display it for 1.57 sec.
-FILEDP: CALL    SCANL
-        DJNZ FILEDP
+FILEDP: CALL    SCAN1
+        DJNZ    FILEDP
         LD      B,4             ;Check if the input
                                 ;filename equals to the
                                 ;specified filenames.
         DEC     HL
         LD      DE, (OUTPTR)
         DEC     DE
-LOOP4   LD      A, (DE)
+LOOP4:  LD      A, (DE)
         CP      (HL)
         DEC     HL
         DEC     DE
@@ -1941,7 +1942,7 @@ LOOP4   LD      A, (DE)
         LD      A,3FH           ;If filename is found
                                 ;then display '
         OUT     (SEG1),A
-        LD      A, @FFH
+        LD      A, 0FFH
         OUT     (SEG2) ,A
         CALL    GETPTR          ;The parameters (starting
                                 ;ending address and checksum)
@@ -1982,8 +1983,8 @@ TLOOP:  CALL    GETBYTE         ;Get one byte from TAPE.
 GETBYTE:
 ; Read one byte from tape.
 ; Output: E -- data read
-; Carry of F',1 -- reading error
-; @ -~ no error
+;         Carry of F',1 -- reading error
+;                     0 -- no error
 ; Destroy reg. -- AF,DE,AF',BC',DE',HL'
 ; Byte format:
 
@@ -2039,7 +2040,7 @@ GETBIT:
 ; At the end of a tape-bit, positive and negative L
 ; stand for 8 and 1 respectively.
 
-        LD      HL, 08
+        LD      HL, 8
 COUNT1: CALL    PERIOD          ;Read one period.
         INC     D               ;The next two instructions
                                 ;check if D is zero. Carry flag
@@ -2059,7 +2060,7 @@ COUNT1: CALL    PERIOD          ;Read one period.
                                 ;part.
         DEC     L
         SET     0,H
-        JR      COUNTL
+        JR      COUNT1
 SHORTP: INC     L               ;The period is 2K Hz ,
                                 ;increase L by l.
         BIT     0,H             ;1f the tape bit has passed
@@ -2100,9 +2101,9 @@ LOOPH:  IN      A, (KIN)        ;Bit 3 of port C is Tapein.
         LD      A,11011111B     ;Echo the tape input to
                                 ;Speaker on MPF IP.
         OUT     (KIN) ,A
-        LD      A, 0FGH
+        LD      A, 0F0H
         OUT     (DIG2) ,A
-        LD      A, OFFH
+        LD      A, 0FFH
         OUT     (DIG1),A
 LOOPL:  IN      A, (KIN)
         INC     DE
@@ -2144,17 +2145,17 @@ GETPTR:
 ; Get parameters from step buffer.
 ; Input: (STEPBF+4) and (STEPBF+5) contain
 ;        starting address.                             ---- page 37 ----
-; (STEPBF+6) and (STEPBF+7) contain
-; ending address.
+;        (STEPBF+6) and (STEPBF+7) contain
+;        ending address.
 ; Output: HL register contains the starting
-; address,
-;BC register contains the length.
-; Carry flay @ -~ BC positive
-; 1 -~ BC negative
+;        address,
+;         BC register contains the length.
+;         Carry flay 0 -- BC positive
+;                    1 -- BC negative
 ; Destroyed reg.: AF,BC,DE,HL.
 
         LD      HL,STEPBF+4
-        GETP    LD E, (HL)      ;Load the starting address
+GETP:   LD E, (HL)      ;Load the starting address
                                 ;into DE .
         INC     HL
         LD      D, (HL)
@@ -2200,25 +2201,25 @@ OLOOP:  RR      E               ;Rotate data into carry.
         CALL    OUTBIT          ;Output the carry.
         DEC     D
         JR      NZ,OLOOP
-        CF                      ;Set carry flag.
+        SCF                     ;Set carry flag.
         CALL OUTBIT             ;Output stop bit.      ---- page 38 ----
         RET
-2296 OUTBIT:
+OUTBIT:
 ; Output one bit to tape.
 ; Input: data in carry flag.
 ; Destroyed reg. -~ AF,BC',DE',HL'
-EXX
-        LD      H,@
-        JR      C,OUTL          ;If data = 1 ,outputl.
-OUT1:   LD      L,ZERO_ 2K
+        EXX
+        LD      H,0
+        JR      C,OUT1          ;If data = 1 ,outputl.
+OUT1:   LD      L,ZERO_2K
         CALL    TONE2K
-        LD      L,ZERO 1K
+        LD      L,ZERO_1K
         JR      BITEND
 OUTIL:                          ;2K 4 cycles ,1K 4 cycles
-        LD      L,ONE 2K
+        LD      L,ONE_2K
         CALL    TONE2K
-        LD      L,ONE 1K 
-BITEND: CALL    TONEILK
+        LD      L,ONE_1K 
+BITEND: CALL    TONE1K
         EXX                     ;Restore registers.
         RET
 ;
@@ -2302,7 +2303,7 @@ CONVER:
         LD      B,0
         ADD     HL,BC
         LD      E, (HL)
-        INC     BL
+        INC     HL
         LD      D, (HL)
         LD      HL, (DISP)
         LD      (HL) ,E
@@ -2336,14 +2337,14 @@ CLRDSP:
         POP     HL
         RET
 CHKINP:                         ;Check alli the datum in input
-                                ;buffer are hexadecimal values or not
+                                ;buffer are hexadecimal values onitorIP.or not
                                 ;until <CR> met.
                                 ;Carry flag is set if there exists
                                 ;at least one non hexadecimal value.
         CALL    CHKHEX
         RET     C
         RET     Z
-CHKINI  CALL    GETHL
+CHKINI: CALL    GETHL
         RET     C
         RET     Z
         JR      CHKINI
@@ -2380,7 +2381,7 @@ SQWAVE: OUT     (KIN) ,A        ;                      ---- page 41 ----
         DJNZ    $
         XOR     20H             ; TOGGLE OUTPUT
         SBC     HL,DE
-        JR      NZ ,SOWAVE
+        JR      NZ ,SQWAVE
         RET
 ;
 ;**************************************************************
@@ -2396,7 +2397,7 @@ SQWAVE: OUT     (KIN) ,A        ;                      ---- page 41 ----
 PRTMES:
         CALL    CLEAR
         CALL    MSG
-REG2    CALL    DECDSP
+REG2:   CALL    DECDSP
         CALL    CR2
         RET
 ;
@@ -2407,7 +2408,7 @@ REG2    CALL    DECDSP
 ; Reg affected: AF
 ; Call: PTEST MTPPRT .
 
-PRINTT  CALL    PTEST
+PRINTT: CALL    PTEST
         RET     NZ
         PUSH    IX
         LD      IX, INPBF
@@ -2455,20 +2456,20 @@ LDA:
         LD      A, (HL)
         CP      ' '             ;SPACE..
         JR      Z,SKIP_
-        CP      09H             ; TAB.
-        JR      NZ ,EOS?
-SKIP:
+        CP      9H              ; TAB.
+        JR      NZ ,EOS_Q
+SKIP_:
         INC     HL
         LD      A, (HL)
         CP      ' '             ;SPACE.
         JR      Z,SKIP_
-        CP      09H             ; TAB.
-        JR      Z,SKIP
+        CP      9H              ; TAB.
+        JR      Z,SKIP_
 STPTR: 
         LD      (GETPT) , HL
         RET
-EOS?:
-        CP      ODH             ;End of string?
+EOS_Q:
+        CP      0DH             ;End of string?
         JR      Z,STPTR         ;Yes
         CP      3AH             ;:
         JR      Z,SKIP_
@@ -2502,15 +2503,15 @@ GETHL:                          ;Get 4 digit number to HL &L=A
                                 ;Z (8DH)
         LD      HL,0            ;Assume input 0000
         PUSH    HL              ;Temporary store in (SP),(SP+1)
-        ADD     HL, SP :        ;HL=SP
+        ADD     HL, SP          ;HL=SP
         EX      DE,HL           ;Borrow SP for tempory buffer.
         CALL    GETCHR
         EX      DE,HL
-V3      CP      '0'
+CV3:    CP      '0'
         JR      NC,CVT
         CP      0DH
         JR      NZ,CV2
-        POP     HL
+CV1:    POP     HL
         LD      A,L             ;String end.
         RET
 CV2:
@@ -2581,7 +2582,7 @@ CHRWR:
         CP      9
         JR      Z,TABOUT
         CALL    CONVER
-TAB_RET: ,
+TAB_RET:
         CALL    CURSOR
         POP     DE
         POP     HL
@@ -2601,11 +2602,11 @@ TAB_RET: ,
 
 CR:
         LD      A,5
-:
+CR4:
         LD      (CRSET) ,A
         PUSH    HL
         LD      HL, (OUTPTR)
-        LD      (HL) , DH
+        LD      (HL) ,0DH
         CALL    CR0             ;Check Tv interface.
         CALL    PTEST           ;Check printer interface. ---- page 45 ----
         JR      Z,CR5
@@ -2613,9 +2614,9 @@ CR:
         CP      46H
         JR      NZ,CR5
         LD      B,A
-DELAY   CALL    SCAN1
+DELAY:  CALL    SCAN1
         DJNZ    DELAY
-CRS5    CALL    PRINTT          ;Print message.
+CR5:    CALL    PRINTT          ;Print message.
         POP     HL
         LD      A, (CRSET)
         CP      20H
@@ -2675,19 +2676,19 @@ TABOUT:
         LD      DE,DISPBF+72
         AND     A
         SBC     HL,DE
-        JR      NC, TAB??
+        JR      NC, TAB_QQ
         LD      A,' '
         CALL    CONVER
-        CALL    TAB?
+        CALL    TAB_Q
         JR      NZ, TABOUT
         JR      TAB_RET
-TAB??: 
+TAB_QQ: 
         LD      HL, (OUTPTR)
         DEC     HL 
         LD      (OUTPTR) ,HL
-        JR      TAB RET
+        JR      TAB_RET
 
-TAB?:                           ;Check if cursor at TAB position.
+TAB_Q:                           ;Check if cursor at TAB position.
                                 ;Zero flag :Set if yes.
 
         LD      DE,DISPBF
@@ -2695,10 +2696,10 @@ TAB?:                           ;Check if cursor at TAB position.
         AND     A
         SBC     HL,DE
         LD      A,L
-TAB?LP:
+TAB_Q_LP:
         RET     Z
         SUB     12
-        JR      NC, TAB?LP
+        JR      NC, TAB_Q_LP
         RET
 ;
 ;**************************************************************
@@ -2739,7 +2740,7 @@ CLEAR:
 MSG:
         LD      A, (HL)
         INC     HL
-        CP      SDH
+        CP      0DH
         RET     Z
         CALL    CHRWR 
         JR      MSG
@@ -2761,18 +2762,18 @@ MSG:
 
 READLN:
 
-LD HL, (OUTPTR)
-LD (INPTR) , HL                 ; Set input pointer.
+        LD      HL, (OUTPTR)
+        LD      (INPTR) , HL    ; Set input pointer.
 RDLOOP:
-        CALL    CHK49   ;Adjust IX pointer.
+        CALL    CHK40   ;Adjust IX pointer.
         CALL    CURSOR
         LD      A, 50H
         LD      (CRSET),A
-        CALL    CRO     ;Check TV interface.
+        CALL    CR0     ;Check TV interface.
         CALL    SCAN
         CP      11H
         JP      Z, ESCAPE       ;SOFTWARE ESCAPE (CONTROL Q).
-        CP      0DH 3   ; CR
+        CP      0DH     ; CR
         JR      Z,RD_END
         CP      05FH    ; <--
         JR      Z,LEFT
@@ -2790,9 +2791,9 @@ RDLOOP:
         JR      NC,RDLOOP
         CP      K_TAB           ;Check TAB key .
         JR      NZ ,NOTTAB
-        LD      A,09            ;09 is the ASC II code for
+        LD      A,9            ;09 is the ASC II code for
                                 ;TAB key .
-NOTTAB: :
+NOTTAB:
         CALL    CHRWR
         JR      RDLOOP
 RD_END:
@@ -2810,19 +2811,19 @@ LEFT:                           ;Backspace key service routine.
         AND     A
         SBC     HL,DE
         JR      NC,RDLOOP       ; Ignore if exceeding LEFT end.
-        EX      HL,DE
+        EX      DE,HL
         DEC     HL              ;Decrease the pointer of
                                 ;input buffer by one.
         LD      (OUTPTR) ,HL
         LD      A, (HL)
-        CP      09
+        CP      9
         JR      Z,B_TAB
         CALL    B_SP
         JR      RDLOOP
 B_TAB:
         CALL    B_SP
-        CALL    TAB? ;Check if cursor at TAB position.
-        JR      Z,B TABL1
+        CALL    TAB_Q ;Check if cursor at TAB position.
+        JR      Z,B_TAB1
         LD      HL, (DISP)
         DEC     HL
         LD      A, (HL)
@@ -2834,10 +2835,10 @@ B_TAB1:
         LD      HL, (OUTPTR)
 B_TAB2:
         DEC     HL
-        LD      A, (HL) -
+        LD      A, (HL) 
         CP      ' '
         JP      NZ ,RDLOOP
-        CALL    TAB?
+        CALL    TAB_Q
         JP      Z,RDLOOP
         LD      A,' '           ;                 ---- page 49 ----
         CALL    CONVER
@@ -2850,7 +2851,7 @@ B_SP:                           ;Clear the rightmost patterns
         DEC     HL
         DEC     HL
         LD      (DISP) , HL
-        CALL    CURSOR ,
+        CALL    CURSOR
         POP     HL
         RET
 ;
@@ -2864,7 +2865,7 @@ B_SP:                           ;Clear the rightmost patterns
 ; Call: CONVER
 
 CURSOR:
-        LD      A,95BH          ; PROMPT
+        LD      A,05BH          ; PROMPT
 CCURSOR:                        ; CALL HERE IF CHANGE PROMPT
         CALL    CONVER
         PUSH    HL
@@ -2890,7 +2891,7 @@ CCURSOR:                        ; CALL HERE IF CHANGE PROMPT
 
 HEXX:
         LD      A,H
-        ALL     HEX2
+        CALL    HEX2
         LD      A,L
         CALL    HEX2
         RET
@@ -2898,20 +2899,20 @@ HEXX:
 ;**************************************************************
 ; Function: Convert binary datas in HL to ASC II codes and
 ; display patterns.                                    ---- page 50 ----
-2901 ; Call routint SPACE] to insert a space.
-29892 ; Input: Same as HEXX
-29863 ; Output: Five ASC II codes in (OUTPTR) - (OUTPTR)+4 .
-2904 ; Ten bytes of display pattern in (DISP) ~ (DISP)+8 .
-2905 ; (OUTPTR) <-— (OUTPTR)+5
-2986 ; (DISP) <= (DISP)+19
-2997 ; Reg affected: AF
-2908 ; Call: HEXX SPACE] .
-2909
-2910 HEX4:
-GA92 CD89@A 2911 CALL HEXX
-QA95 3E28 2912 SPACE1 LD iy”
-GA97 C3249 2913 JP CHRWR
-2914 ;
+; Call routint SPACE] to insert a space.
+ ; Input: Same as HEXX
+ ; Output: Five ASC II codes in (OUTPTR) - (OUTPTR)+4 .
+; Ten bytes of display pattern in (DISP) ~ (DISP)+8 .
+ ; (OUTPTR) <-— (OUTPTR)+5
+ ; (DISP) <= (DISP)+19
+ ; Reg affected: AF
+ ; Call: HEXX SPACE] .
+
+HEX4:
+        CALL    HEXX
+SPACE1: LD      A,' '
+        JP      CHRWR
+;
 ;**************************************************************
 ; Function: Convert binary data to ASC II code and
 ; display patterns.
@@ -2977,11 +2978,11 @@ DECIMAL:
 
         LD      IY,TENS         ; Table of ten's powers.
         LD      B,3             ; Output three digits.
-        Lay     C,0             ; Zero supress flag.
+        LD      C,0             ; Zero supress flag.
 CLOOP:
-        LD      E, (TY)
+        LD      E, (IY+0)
         INC     IY
-        LD      D, (IY)
+        LD      D, (IY+0)
         INC     IY
         XOR     A
 DECLOOP:
@@ -2996,7 +2997,7 @@ ADDBACK:
         RET
 SUPRESS:
         AND     A
-        JR      Z,YES           ; If zero then ckeck zero
+        JR      Z,YES_0         ; If zero then ckeck zero
                                 ;supress flag.
         LD      C,A             ; Else
         ADD     A,30H           ; Convert to ASC II code format
@@ -3005,54 +3006,54 @@ YES_0:
         LD      A,C
         AND     A
         JR      Z,BLANK0        ; Supress leading zero .
-PRINTS:
+PRINT0:
         LD      A,C
         JP      CHRWR
-BLANK@:
+BLANK0:
         LD      A,B             ; Still check for last digit,
         DEC     A
         JR      Z,PRINT0        ; If last digit then print ‘'g'
-        LD      A," !
+        LD      A,' '
         JP      CHRWR           ;                      ---- page 52 ----
-3017
+
 ;**************************************************************
-3019 ; Function: Convert ASC II codes to corresponding hexadecimal
-3820 ; values until. met none hexadecimal digit.
-3021 ; The return value is stored in HL.
-3022 ; Input: DE -~ Point to the first location of ASC II code
-3023 ; to be changed.
-3924 ; Output: HL -~ Return values (hexadecimal digits).
-3025 ; (HEXFLAG) is set if there exists a digit within
-3026 ; (‘A'..'F') or the last none hexadecimal character
-3027 ; is 'H' .
-3628 ; Reg affected: AF BC DE HL.
-3029 ; Call: ONE
-3030
-3031 HEXBIN:
+; Function: Convert ASC II codes to corresponding hexadecimal
+;           values until. met none hexadecimal digit.
+;           The return value is stored in HL.
+; Input: DE -- Point to the first location of ASC II code
+;              to be changed.
+; Output: HL -- Return values (hexadecimal digits).
+;               (HEXFLAG) is set if there exists a digit within
+;               (‘A'..'F') or the last none hexadecimal character
+;               is 'H' .
+; Reg affected: AF BC DE HL.
+; Call: ONE
+
+HEXBIN:
 
         XOR     A
-        LD      (HEXFLAG) ,A
+        LD      (HEXFLA) ,A
         LD      B,A
         LD      H,A
         LD      L,A 
 HBLOOP:
         LD      A, (DE)
         CALL    ONE
-        JR      C,H?
+        JR      C,HQ
         ADD     HL, HL          ; (HL]=16* [HL]
-        OADD    HL,HL
+        ADD     HL,HL
         ADD     HL,HL
         ADD     HL, HL
         LD      C,A
         ADD     HL, BC
         INC     DE
         JR      HBLOOP
-H?:
+HQ:
         LD      A, (DE)
         CP      'H'
         RET     NZ
         INC     DE
-        LD      (HEXFLAG) ,A
+        LD      (HEXFLA) ,A
         LD      A, (DE)
         RET
 
@@ -3081,7 +3082,7 @@ ONE:
         SUB     7
         CP      18
         RET     C
-        LD      (HEXFLAG) ,A
+        LD      (HEXFLA) ,A
         RET
 ;
 ;**************************************************************
@@ -3128,8 +3129,8 @@ NDIGIT:
 SKIP:
         LD      A, (HL)
         CP      ' '
-        JR      2,SK1
-        CP      09H             ; TAB                  ---- page 54 ----
+        JR      Z,SK1
+        CP      9H              ; TAB                  ---- page 54 ----
         RET     NZ
 SK1:
         INC     HL
@@ -3144,66 +3145,66 @@ A_Z?:
 
 ;KEY CODE FOR DEPRESSED KEY
 KEYTAB:
-KB      DEFB    31H             ;1
-K1      DEFB    41H             ;A
-K2      DEFB    20H             ; SPACE
-k3      DEFB    32H             ;2
-k4      DEFB    53H             ;S
-K5      DEFB    5FH             ;<--
-K6      DEFB    33H             ;3
-k7      DEFB    44H             ;D
-K8      DEFB    68H             ;-~>
-k9      DEFB    34H             ;4
-KA      DEFB    46H             ;F
-KB      DEFB    69H             ;DOWN ARROW
-KC      DEFB    35H             ;5
-KD      DEFB    47H             ;G
-KE      DEFB    5EH             ;UP ARROW
-KF      DEFB    36H             ;6
-K10     DEFB    48H             ;H
-K11     DEFB    0DH             ;CR
-K12     DEFB    37H             ;7
-K13     DEFB    4AH             ;J
-K14     DEFB    2FH             ;/
-K15     DEFB    38H             ;8
-K16     DEFB    4BH             ;K
-K17     DEFB    3CH             ;<
-K18     DEFB    39H             ;9
-K19     DEFB    4CH             ;L
-KK3E    DEFB    3EH             ;>
-K1B     DEFB    30H             ;8
-KIC     DEFB    3AH             ;2
-KID     DEFB    7BH             ;UNUSED
-KIE     DEFB    51H             ;Q
-KIF     DEFB    5AH             ;Z
-KK12    DEFB    2DH             ;-
-K21     DEFB    57H             ;W
-K22     DEFB    58H             ;X
-KK13    DEFB    3BH             ;;
-K24     DEFB    45H             ;E
-K25     DEFB    43H             ;C
-KK19    DEFB    4QH             ;@
-K27     DEFB    52H             ;R
-K28     DEFB    56H             ;V
-KK14    DEFB    5BH             ;
-K2A     DEFB    54H             ;T
-K2B     DEFB    42H             ;B                     ---- page 55 ----
-KK15    DEFB    2BH             ;+
-K2D     DEFB    59H             ;Y
-K2E     DEFB    4EH             ;N
-KK24    DEFB    3DH             ;=
-K30     DEFB    55H             ;U
-K31     DEFB    4DH             ;M
-K32     DEFB    7BH             ;UNUSED
-K33     DEFB    49H             ;I
-K34     DEFB    2CH             ;,
-K35     DEFB    7BH             ;UNUSED
-K36     DEFB    4FH             ;O
-K37     DEFB    2EH             ;.
-K38     DEFB    7BH             ;UNUSED
-K39     DEFB    50H             ;P
-K3A     DEFB    3FH             ;?
-K7B     DEFB    7BH             ;UNUSED
+K0:     DEFB    31H             ;1
+K1:     DEFB    41H             ;A
+K2:     DEFB    20H             ; SPACE
+k3:     DEFB    32H             ;2
+k4:     DEFB    53H             ;S
+K5:     DEFB    5FH             ;<--
+K6:     DEFB    33H             ;3
+K7:     DEFB    44H             ;D
+K8:     DEFB    68H             ;-~>
+K9:     DEFB    34H             ;4
+KA:     DEFB    46H             ;F
+KB:     DEFB    69H             ;DOWN ARROW
+KC:     DEFB    35H             ;5
+KD:     DEFB    47H             ;G
+KE:     DEFB    5EH             ;UP ARROW
+KF:     DEFB    36H             ;6
+K10:    DEFB    48H             ;H
+K11:    DEFB    0DH             ;CR
+K12:    DEFB    37H             ;7
+K13:    DEFB    4AH             ;J
+K14:    DEFB    2FH             ;/
+K15:    DEFB    38H             ;8
+K16:    DEFB    4BH             ;K
+K17:    DEFB    3CH             ;<
+K18:    DEFB    39H             ;9
+K19:    DEFB    4CH             ;L
+KK3E:   DEFB    3EH             ;>
+K1B:    DEFB    30H             ;8
+KIC:    DEFB    3AH             ;2
+KID:    DEFB    7BH             ;UNUSED
+KIE:    DEFB    51H             ;Q
+KIF:    DEFB    5AH             ;Z
+KK12:   DEFB    2DH             ;-
+K21:    DEFB    57H             ;W
+K22:    DEFB    58H             ;X
+KK13:   DEFB    3BH             ;;
+K24:    DEFB    45H             ;E
+K25:    DEFB    43H             ;C
+KK19:   DEFB    40H             ;@
+K27:    DEFB    52H             ;R
+K28:    DEFB    56H             ;V
+KK14:   DEFB    5BH             ;
+K2A:    DEFB    54H             ;T
+K2B:    DEFB    42H             ;B                     ---- page 55 ----
+KK15:   DEFB    2BH             ;+
+K2D:    DEFB    59H             ;Y
+K2E:    DEFB    4EH             ;N
+KK24:   DEFB    3DH             ;=
+K30:    DEFB    55H             ;U
+K31:    DEFB    4DH             ;M
+K32:    DEFB    7BH             ;UNUSED
+K33:    DEFB    49H             ;I
+K34:    DEFB    2CH             ;,
+K35:    DEFB    7BH             ;UNUSED
+K36:    DEFB    4FH             ;O
+K37:    DEFB    2EH             ;.
+K38:    DEFB    7BH             ;UNUSED
+K39:    DEFB    50H             ;P
+K3A:    DEFB    3FH             ;?
+K7B:    DEFB    7BH             ;UNUSED
 RTABLE:
         DEFB    41H             ;A
         DEFB    46H             ;F
@@ -3213,7 +3214,7 @@ RTABLE:
         DEFB    45H             ;E
         DEFB    48H             ;H
         DEFB    4CH             ;L
-        DEFB    6GH             ;A'
+        DEFB    60H             ;A'
         DEFB    61H             ;F'
         DEFB    62H             ;B'
         DEFB    63H             ;c'
@@ -3242,7 +3243,7 @@ SEGTAB:
         DEFW    0FBFFH          ;!
         DEFW    0EBFFH          ;(
         DEFW    0D7FFH          ;)
-        DEFW    0CO3FH          ;*
+        DEFW    0C03FH          ;*
         DEFW    0FC3FH          ;+
         DEFW    0DFFFH          ;,
         DEFW    0FF3FH          ;-                     ---- page 56 ----
@@ -3256,7 +3257,7 @@ SEGTAB:
         DEFW    0F772H          ;5
         DEFW    0FF02H          ;6
         DEFW    0FFF8H          ;7
-        DEFW    9FF00H          ;8
+        DEFW    0FF00H          ;8
         DEFW    0FF19H          ;9
         DEFW    0F7FH           ;:
         DEFW    0DFBFH          ;;
@@ -3264,24 +3265,24 @@ SEGTAB:
         DEFW    0FF37H          ;=
         DEFW    0E7F7H          ;>
         DEFW    0FD7CH          ;?
-        DEFW    0FDAGH          ;@
+        DEFW    0FDA0H          ;@
         DEFW    0FF08H          ;A
         DEFW    0FC76H          ;B
         DEFW    0FFC6H          ;C
-        DEFW    0FCFGH          ;D
+        DEFW    0FCF0H          ;D
         DEFW    0FF06H          ;E
         DEFW    0FF0EH          ;F
         DEFW    0FF42H          ;G
-        DEFW    0FFO9H          ;H
+        DEFW    0FF09H          ;H
         DEFW    0FCF6H          ;I
         DEFW    0FFE1H          ;J
-        DEFW    0EBSFH          ;K
+        DEFW    0EB8FH          ;K
         DEFW    0FFC7H          ;L
         DEFW    0F3C9H          ;M
         DEFW    0E7C9H          ;N
-        DEFW    0FFCGH          ;O
-        DEFW    0FFOCH          ;P
-        DEFW    0EFCOH          ;Q
+        DEFW    0FFC0H          ;O
+        DEFW    0FF0CH          ;P
+        DEFW    0EFC0H          ;Q
         DEFW    0EF0CH          ;R
         DEFW    0FF12H          ;s
         DEFW    0FCFEH          ;T
@@ -3300,7 +3301,7 @@ SEGTAB:
         DEFW    0BF0EH          ;F'
         DEFW    0BC70H          ;B'
         DEFW    0BFC6H          ;C'
-        DEFW    0BCFOH          ;D'
+        DEFW    0BCF0H          ;D'
         DEFW    0BF06H          ;E'
         DEFW    0BF09H          ;H'
         DEFW    0BFC7H          ;L'                    ---- page 57 ----
@@ -3351,7 +3352,7 @@ MPFII:
         DEFB    0DH
 ERR_SP:
         DEFM    'ERROR'
-        DEFB:   2DH             ;_
+        DEFB    2DH             ;_
         DEFM    'sp'
         DEFB    0DH
 SYS_SP:
@@ -3365,21 +3366,21 @@ PRTON:
 PRTOFF:
         DEFM    'PRT OFF'
         DEFB    0DH
-RAM2K VALUE SET:
+RAM2K_VALUE_SET:
         DEFW    0F800H          ;SET EDITOR LIMITS.
         DEFW    0FCFFH
         DEFW    0FE00H          ;SET SYMBOL LIMITS.
         DEFW    0FEA0H
-        DEFW    0FDOGH          ;SET OBJECT LIMITS.
+        DEFW    0FD00H          ;SET OBJECT LIMITS.
         DEFW    0FDFFH
 RAM4K_VALUE_SET:
         DEFW    0FA00H          ;SET EDITOR LIMITS.
         DEFW    0FAFFH
         DEFW    0FD00H          ;SET SYMBOL LIMITS.
-        DEFW    0FEAGH
-        DEFW    0FBOGH          ;SET OBJECT LIMITS.
+        DEFW    0FEA0H
+        DEFW    0FB00H          ;SET OBJECT LIMITS.
         DEFW    0FCFFH
-TENS                            ; TABLE USED BY 'TOASCII' TO CONVERT
+TENS:                           ; TABLE USED BY 'TOASCII' TO CONVERT
                                 ; BINARY TO DECIMAL DIGITS
         DEFW    100
         DEFW    10
@@ -3397,68 +3398,84 @@ TENS                            ; TABLE USED BY 'TOASCII' TO CONVERT
 ; 
         ORG     0FEA0H
 USERSTK:
-        DEFS    36H
+        DEFS    30H
         ORG     0FED0H
 SYSSTK:
-STEPBF  DEFS    9
-TEXT_F                          ;ASSEMBLER SOURCE FROM.
-EDIT_START_ADDR DEFS    2       ;EDITOR BOTTOM.
-TEXT_T                          ;ASSEMBLER SOURCE TO.
-END_DATA_ADDR   DEFS    2       ;EDITOR TOP.
-END_LN_NO       DEFS    2       ;EDITOR LAST LINE NUMBER.
-RAM_START_ADDR  DEFS    2       ;EDITOR LOW LIMIT.
-EDIT_END_ADDR   DEFS    2       ;EDITOR HIGH LIMIT.
-ST_F            DEFS    2       ;ASSEMBLER SYMBOL TABLE FROM.
-ST_T            DEFS    2       ;ASSEMBLER SYMBOL TABLE TO.
-OBJ_F           DEFS    2       ;ASSEMBLER OBJECT CODE FROM.
-OBJ_T           DEFS    2       ;ASSEMBLER OBJECT CODE TO.
-END_ADDR        DEFS    2       ;Contains the limit address
+STEPBF: DEFS    9
+TEXT_F:                          ;ASSEMBLER SOURCE FROM.
+EDIT_START_ADDR:DEFS    2       ;EDITOR BOTTOM.
+TEXT_T:                          ;ASSEMBLER SOURCE TO.
+END_DATA_ADDR:  DEFS    2       ;EDITOR TOP.
+END_LN_NO:      DEFS    2       ;EDITOR LAST LINE NUMBER.
+RAM_START_ADDR: DEFS    2       ;EDITOR LOW LIMIT.
+EDIT_END_ADDR:  DEFS    2       ;EDITOR HIGH LIMIT.
+ST_F:           DEFS    2       ;ASSEMBLER SYMBOL TABLE FROM.
+ST_T:           DEFS    2       ;ASSEMBLER SYMBOL TABLE TO.
+OBJ_F:          DEFS    2       ;ASSEMBLER OBJECT CODE FROM.
+OBJ_T:          DEFS    2       ;ASSEMBLER OBJECT CODE TO.
+END_ADDR:       DEFS    2       ;Contains the limit address
                                 ;of ccommand INSERT or DELETE .
-BRAD    DEFS    2               ;Breakpoint address .
-BRDA    DEFS    1               ;Data of breakpoint address .
-POWERUP DEFS    1               ;Power_up initialization .
-TEST    DEFS    1               ;Bit 7 -- set when illegal key
+BRAD:   DEFS    2               ;Breakpoint address .
+BRDA:   DEFS    1               ;Data of breakpoint address .
+POWERUP:DEFS    1               ;Power_up initialization .
+TEST:   DEFS    1               ;Bit 7 -- set when illegal key
                                 ;         is entered.
-STEPFG  DEFS    1               ;STEP mode test flag .
-PRTFLG  DEFS    1               ;Printer toggle switch .
-BEEPSET DEFS    1               ;Beep sound toggle switch.
-FBEEP   DEFS    1               ;Freqency of BEEP .
-TBEEP   DEFS    2               ;Time duration of BEEP .
-MADDR   DEFS    2               ;Temporary storage .
-TEMP1   DEFS    4               ;See comments on command STEP .
-ATEMP   DEFS    1               ;Temporary storage .
-HLTEMP  DEFS    2               ;Temporary storage .
-IMIAD   DEFS    2               ;Contains the address of Opcode ‘FF’
+STEPFG: DEFS    1               ;STEP mode test flag .
+PRTFLG: DEFS    1               ;Printer toggle switch .
+BEEPSET:DEFS    1               ;Beep sound toggle switch.
+FBEEP:  DEFS    1               ;Freqency of BEEP .
+TBEEP:  DEFS    2               ;Time duration of BEEP .
+MADDR:  DEFS    2               ;Temporary storage .
+TEMP1:  DEFS    4               ;See comments on command STEP .
+ATEMP:  DEFS    1               ;Temporary storage .
+HLTEMP: DEFS    2               ;Temporary storage .
+IM1AD:  DEFS    2               ;Contains the address of Opcode ‘FF’
                                 ;service routine.( RST 38H, mode
                                 ;1 interrupt, etc).
-RCOUNT  DEFS    1               ;Register counts in register table.
-INPBF   DEFS    48              ;Input buffer .
-DISPBF  DEFS    82              ;Display buffer .
-GETPT   DEFS    2               ;Temporary storage for GETHL .
-TYPEFG  DEFS    1               ;Type test flag.
-CRSET   DEFS    1               ;Display delay time .
-OUTPTR  DEFS    2               ;Input buffer pointer.
-DISP    DEFS    2               ;Display buffer pointer .
-INPTR   DEFS    2               ;Limit of input buffer pointer .
+RCOUNT: DEFS    1               ;Register counts in register table.
+INPBF:  DEFS    48              ;Input buffer .
+DISPBF: DEFS    82              ;Display buffer .
+GETPT:  DEFS    2               ;Temporary storage for GETHL .
+TYPEFG: DEFS    1               ;Type test flag.
+CRSET:  DEFS    1               ;Display delay time .
+OUTPTR: DEFS    2               ;Input buffer pointer.
+DISP:   DEFS    2               ;Display buffer pointer .
+INPTR:  DEFS    2               ;Limit of input buffer pointer .
 REGBF:
-USERAF  DEFS    2
-USERBC  DEFS    2
-USERDE  DEFS    2               ;                      ---- page 60 ----
-USERHL  DEFS    2
-UAFP    DEFS    2               ;AF'
-UBCP    DEFS    2               ;BC'
-UDEP    DEFS    2               ;DE'
-UHLP    DEFS    2               ;HL'
-USERIX  DEFS    2
-USERIY  DEFS    2
-USERSP  DEFS    2
-USERPC  DEFS    2
-USERIF  DEFS    2
-BLANK   EQU     6FD0H
-K_TAB   EQU     68H             ;TAB CODE
-TVSET   EQU     0A000H          ;The first memory location
+USERAF: DEFS    2
+USERBC: DEFS    2
+USERDE: DEFS    2               ;                      ---- page 60 ----
+USERHL: DEFS    2
+UAFP:   DEFS    2               ;AF'
+UBCP:   DEFS    2               ;BC'
+UDEP:   DEFS    2               ;DE'
+UHLP:   DEFS    2               ;HL'
+USERIX: DEFS    2
+USERIY: DEFS    2
+USERSP: DEFS    2
+USERPC: DEFS    2
+USERIF: DEFS    2
+BLANK:  EQU     6FD0H
+K_TAB:  EQU     68H             ;TAB CODE
+TVSET:  EQU     0A000H          ;The first memory location
                                 ;of TV interface board .
-TV      EQU     0A0011H         ;The starting address of monitor
+TV:     EQU     0A001H          ;The starting address of monitor
                                 ;program on TV interface board .
-BASICC EQU      20290H          ;The starting address of
+BASICC: EQU     2020H           ;The starting address of
                                 ;reenter BASIC .       ---- page 61 ----
+
+; Assembly additions for z80asm:
+TEMP:   EQU     0000H
+HEXFLA: EQU     0000H
+COUNT:  EQU     0000H
+CHK40:  EQU     0912H
+MTPPRT: EQU     0000H
+ERRSMSG:EQU     0CAFH
+MDUMP:  EQU     0000H
+TEST5:  EQU     0000H
+PRT_MPF:EQU     0000H
+BASICZ: EQU     0000H
+REEDIT: EQU     0000H
+EDIT:   EQU     0000H
+LASM:   EQU     0000H
+ASM:    EQU     0000H
