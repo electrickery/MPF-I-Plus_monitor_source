@@ -21,7 +21,7 @@ SEG1:   EQU	90H     ;8255 II port A
 SEG2:   EQU	91H     ;8255 II port B
 KIN:    EQU	92H     ;8255 II port C
 PWCODE: EQU	0A5H    ;Power up code
-ZSUM:   EQU	0E0H    ;This will make the sum of all
+ZSUM:   EQU	0D5H    ;This will make the sum of all
                     ;monitor codes to be zero.
 
 ; The following EQUATES are used for timing. Their values
@@ -179,6 +179,7 @@ RS_START:
 ; program resumes at RESET1.
 
         JR      RESET1
+        DEFB    0FFH 
 ;
 ;**************************************************************
         ORG     28H
@@ -229,6 +230,7 @@ RESET1:
 ;code in ROM zero.
 
         DEFB    ZSUM
+;        DEFB    0E5h        ; filler?
                             ;                             ---page 4 ----
 ;**********************************************************
 
@@ -317,9 +319,9 @@ NMI:
 
         LD      (ATEMP),A       ;SaveAregister
         LD      A,0FFH  ;DisableBREAKsignaland all digits.
-        LD      (DIG1),A
-        LD      (DIG2),A
-        LD      (DIG3),A
+        OUT     (DIG1),A
+        OUT     (DIG2),A
+        OUT     (DIG3),A
         OUT     (KIN),A
         LD      A,(ATEMP)       ;Restore A register
 RGSAVE: LD      (HLTEMP),HL     ;Save register HL
@@ -379,7 +381,7 @@ SETIF:  LD      (USERIF),A
 ; overlayed, then display SYS-SP. This checking
 ; is done by the following instructions.
 
-        LD      DE, USERSTK+1
+        LD      DE,-USERSTK+1
         ADD     HL,DE
         JR      C,SETST3
 SETST0:
@@ -619,8 +621,8 @@ INI:
 ;The next7 instructionscheck IC onU4isRAMornot.
 
         LD      HL,0F7FFH
-RAMT1:   LD      BC,8000H
-RAMT2:   CALL    RAMCHK
+RAMT1:  LD      BC,8000H
+RAMT2:  CALL    RAMCHK
         JR      Z,TNEXT
         JR      INI8
 TNEXT:   CPD
@@ -960,7 +962,7 @@ MEMEXC:
         CP      3AH             ;:
         JP      Z,MMODFY
         CP      2EH             ;.
-        JP      Z,MDUMP1
+        JR      Z,MDUMP1
         CP      2FH             ;/
         JR      Z,MMOVE
         CALL    MEMEX3          ;Displayspecifiedmemory
@@ -1755,7 +1757,8 @@ SERCH:  CP      (HL)        ;Compare with the first
         JR      Z,SERCH2    ;Zero,if it is a single
                             ;byte register.
         INC     HL
-        INC     C           ;Compare with the second
+        INC     C
+        CP      (HL)        ;Compare with the second
                             ;register name.
 
         JR      Z,SERCH2
@@ -1818,7 +1821,7 @@ DUMP1:  CALL    GET             ;Get a string of characters
                                 ;datas are illegal.
         LD      (STEPBF+6) ,HL
 DUMP2:  CALL    GETCHR          ;Get tape filename.
-        LD DE,  STEPBF
+        LD      DE,STEPBF
         LD      BC,4
         LDIR
         CALL    SUM1            ;Load parameters from
@@ -1832,7 +1835,7 @@ DUMP2:  CALL    GETCHR          ;Get tape filename.
                                 ;is negative)
         LD      (STEPBF+8) ,A   ;Store the ckecksum into
                                 ;STEPBF+8.
-                                ;Output 1K Hz square
+        LD      HL,4000         ;Output 1K Hz square
                                 ;wave for 490% cycles.
                                 ;Leading sync signal.
         CALL    TONE1K
@@ -3433,7 +3436,7 @@ IM1AD:  DEFS    2               ;Contains the address of Opcode ‘FF’
                                 ;service routine.( RST 38H, mode
                                 ;1 interrupt, etc).
 RCOUNT: DEFS    1               ;Register counts in register table.
-INPBF:  DEFS    48              ;Input buffer .
+INPBF:  DEFS    40              ;Input buffer .
 DISPBF: DEFS    82              ;Display buffer .
 GETPT:  DEFS    2               ;Temporary storage for GETHL .
 TYPEFG: DEFS    1               ;Type test flag.
