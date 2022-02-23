@@ -179,8 +179,7 @@ RS_START:
 ; program resumes at RESET1.
 
         JR      RESET1
-        DEFB    0FFH 
-;
+        DEFB    0FFH            ; filler byte to match binary
 ;**************************************************************
         ORG     28H
 ; Address 28H is the entry point of BREAK trap.
@@ -230,8 +229,7 @@ RESET1:
 ;code in ROM zero.
 
         DEFB    ZSUM
-;        DEFB    0E5h        ; filler?
-                            ;                             ---page 4 ----
+;                                                         ---page 4 ----
 ;**********************************************************
 
         ORG     38H
@@ -310,7 +308,6 @@ RESET2:
 ;**************************************************************
         ORG     66H
 NMI:
-
 ; Entry point of non maskable interrupt. NMI will occur
 ; when user's program is breaked.
 ; The service routine which starts here saves all
@@ -549,7 +546,7 @@ DEASM3:
         CALL    PTESTT      ;Ret if printer is not exists
                             ;or the toggle printer switch is off.
         RET     NZ
-        CALL    DEASM3      ;Call disassembler.
+        CALL    DEASM       ;Call disassembler.
         RET
         
 ;**************************************************************
@@ -621,7 +618,7 @@ INI:
 ;The next7 instructionscheck IC onU4isRAMornot.
 
         LD      HL,0F7FFH
-RAMT1:  LD      BC,8000H
+RAMT1:  LD      BC,800H
 RAMT2:  CALL    RAMCHK
         JR      Z,TNEXT
         JR      INI8
@@ -1033,7 +1030,7 @@ SET:
 ;<M>=<start>.<end> <linking address><CR>
 
 MDUMP1:
-        CALL    PTEST
+        CALL    PTESTT ; PTEST in listing
         RET     NZ
         LD      A,30H           ;Set memory dump type.
         LD      (TEST5),A
@@ -1053,7 +1050,7 @@ MMOVE:
         CALL    GETHL           ;Get the ending address.
         LD      (STEPBF+2),HL
         CALL    GETHL           ;Get the destination address.
-        LD      (STEPBF+6),HL
+        LD      (STEPBF+4),HL
         CALL    GMV
         JP      CR3
 
@@ -1362,7 +1359,7 @@ BREAK1:
         LD      A,(INPBF+9)
         JR      Z,B3            ;For <CR> condition.
         CP      'C'             ; For C condition.
-        CALL    CLRB
+        CALL    Z,CLRB
         JR      Z,B3
         LD      HL,INPBF+4
         CALL    CHKHE2          ;Get new breakpoint address
@@ -1730,10 +1727,10 @@ MEMDP2:
         CALL    CLEAR
         LD      HL,(USERPC)
         CALL    HEX4
-MEMDP3:
-        JP      REGALL
+MEMDP3: JP      RFOR3  ; REGALL in listing
 
 ;**************************************************************
+
 ; Find bases of the register name and contents.
 ; Input :Register name (ASC II code) stored in DE.
 ; Output: HL -- Base of RTABLE (i.e.,point to register
@@ -1760,7 +1757,6 @@ SERCH:  CP      (HL)        ;Compare with the first
         INC     C
         CP      (HL)        ;Compare with the second
                             ;register name.
-
         JR      Z,SERCH2
         LD      A,D
         JR      SERCH4
@@ -1926,7 +1922,7 @@ LOOP3:  LD      A, (HL)
         CALL    CONVER
         INC     HL
         DJNZ    LOOP3
-        LD      B,196           ;Display it for 1.57 sec.
+        LD      B,100           ;Display it for 1.57 sec.
 FILEDP: CALL    SCAN1
         DJNZ    FILEDP
         LD      B,4             ;Check if the input
@@ -2043,7 +2039,7 @@ GETBIT:
 ; At the end of a tape-bit, positive and negative L
 ; stand for 8 and 1 respectively.
 
-        LD      HL, 8
+        LD      HL, 00
 COUNT1: CALL    PERIOD          ;Read one period.
         INC     D               ;The next two instructions
                                 ;check if D is zero. Carry flag
@@ -2214,11 +2210,11 @@ OUTBIT:
         EXX
         LD      H,0
         JR      C,OUT1          ;If data = 1 ,outputl.
-OUT1:   LD      L,ZERO_2K
+OUT0:   LD      L,ZERO_2K
         CALL    TONE2K
         LD      L,ZERO_1K
         JR      BITEND
-OUTIL:                          ;2K 4 cycles ,1K 4 cycles
+OUT1:                          ;2K 4 cycles ,1K 4 cycles
         LD      L,ONE_2K
         CALL    TONE2K
         LD      L,ONE_1K 
@@ -2438,7 +2434,7 @@ PTEST:
         RET     NZ
 PTESTT:                         ; Check printer interface,
                                 ; Carry flag = 1 if printer exists. ---- page 42 ----
-        LD      A, (6988H)
+        LD      A, (6000H)
         CP      0CDH
         RET
 ;
@@ -2550,11 +2546,11 @@ NOTHEX:                         ;Error
 ; Call: None
 
 CHK46:
-        LD      HL, (DISP)
-        LD      DE, DISPBF+38
-        AND     A
-        SBC     HL,DE           ;                      ---- page 44 ----
-        LD      IX, DISPBF
+        LD      DE,DISPBF+38    ;LD      HL, (DISP)    ; order in listing
+        LD      IX,DISPBF       ;LD      DE, DISPBF+38
+        LD      HL, (DISP)      ;AND     A
+        AND     A               ;SBC     HL,DE           ;  ---- page 44 ----
+        SBC     HL,DE           ;LD      IX, DISPBF
         RET     C
         EX      DE,HL
         ADD     IX,DE
@@ -2614,7 +2610,7 @@ CR4:
         CALL    PTEST           ;Check printer interface. ---- page 45 ----
         JR      Z,CR5
         LD      A, (CRSET)
-        CP      46H
+        CP      40H
         JR      NZ,CR5
         LD      B,A
 DELAY:  CALL    SCAN1
@@ -2624,7 +2620,7 @@ CR5:    CALL    PRINTT          ;Print message.
         LD      A, (CRSET)
         CP      20H
         RET     Z
-        CP      38H
+        CP      30H
         JP      Z,CLRBF
         CALL    CLEAR
         CALL    CURSOR
@@ -2656,7 +2652,7 @@ CR1:
 ; Call: CR0 PTEST PRINTT .
 
 CR2:
-        LD      A,26H
+        LD      A,20H
         JR      CR4
 ;
 ;**************************************************************
@@ -2668,7 +2664,7 @@ CR2:
 ; Call: CR0 PTEST CLRBF .
 ;
 CR3:
-        LD A,39H
+        LD A,30H
         JR CR4                                        ;---- page 46 ----     
 
 ;**************************************************************
@@ -2785,7 +2781,7 @@ RDLOOP:
         CP      69H             ;DOWN arrow.
         JR      Z,RDLOOP
         LD      HL, (DISP)
-        LD      DE, DISPBF+88   ;Check the numbers of character   ---- page 48 ----
+        LD      DE, DISPBF+80   ;Check the numbers of character   ---- page 48 ----
                                 ;in input buffer.
                                 ;The numbers of input characters
                                 ;is limited to 49.
@@ -3010,7 +3006,7 @@ YES_0:
         AND     A
         JR      Z,BLANK0        ; Supress leading zero .
 PRINT0:
-        LD      A,C
+        LD      A,'0'
         JP      CHRWR
 BLANK0:
         LD      A,B             ; Still check for last digit,
@@ -3083,7 +3079,7 @@ ONE:
         CCF
         RET     NC
         SUB     7
-        CP      18
+        CP      10
         RET     C
         LD      (HEXFLA) ,A
         RET
@@ -3356,7 +3352,7 @@ MPFII:
 ERR_SP:
         DEFM    'ERROR'
         DEFB    2DH             ;_
-        DEFM    'sp'
+        DEFM    'SP'
         DEFB    0DH
 SYS_SP:
         DEFM    'SYS'
@@ -3365,7 +3361,7 @@ SYS_SP:
         DEFB    0DH
 PRTON:
         DEFM    'PRT ON'
-        DEFB    0H              ;                      ---- page 58 ----
+        DEFB    0DH              ;                      ---- page 58 ----
 PRTOFF:
         DEFM    'PRT OFF'
         DEFB    0DH
@@ -3377,7 +3373,7 @@ RAM2K_VALUE_SET:
         DEFW    0FD00H          ;SET OBJECT LIMITS.
         DEFW    0FDFFH
 RAM4K_VALUE_SET:
-        DEFW    0FA00H          ;SET EDITOR LIMITS.
+        DEFW    0F000H          ;SET EDITOR LIMITS.
         DEFW    0FAFFH
         DEFW    0FD00H          ;SET SYMBOL LIMITS.
         DEFW    0FEA0H
@@ -3405,9 +3401,9 @@ USERSTK:
         ORG     0FED0H
 SYSSTK:
 STEPBF: DEFS    9
-TEXT_F:                          ;ASSEMBLER SOURCE FROM.
+TEXT_F:                         ;ASSEMBLER SOURCE FROM.
 EDIT_START_ADDR:DEFS    2       ;EDITOR BOTTOM.
-TEXT_T:                          ;ASSEMBLER SOURCE TO.
+TEXT_T:                         ;ASSEMBLER SOURCE TO.
 END_DATA_ADDR:  DEFS    2       ;EDITOR TOP.
 END_LN_NO:      DEFS    2       ;EDITOR LAST LINE NUMBER.
 RAM_START_ADDR: DEFS    2       ;EDITOR LOW LIMIT.
@@ -3436,7 +3432,7 @@ IM1AD:  DEFS    2               ;Contains the address of Opcode ‘FF’
                                 ;service routine.( RST 38H, mode
                                 ;1 interrupt, etc).
 RCOUNT: DEFS    1               ;Register counts in register table.
-INPBF:  DEFS    40              ;Input buffer .
+INPBF:  DEFS    40              ;Input buffer .   
 DISPBF: DEFS    82              ;Display buffer .
 GETPT:  DEFS    2               ;Temporary storage for GETHL .
 TYPEFG: DEFS    1               ;Type test flag.
@@ -3482,3 +3478,4 @@ REEDIT: EQU     00cf2h; 0000H
 EDIT:   EQU     00ce6h; 0000H
 LASM:   EQU     01052h; 0000H
 ASM:    EQU     010cch; 0000H
+DEASM:  EQU     06500h;
