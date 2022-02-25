@@ -44,19 +44,20 @@ The latter is done in an iterative loop:
 
 
 Differences between scanned listing and ROM:
-1032 MDUMP1:
+
+    1032 MDUMP1:
         CALL    PTESTT ; PTEST in listing
         
-1730 MEMDP3: JP      RFOR3  ; REGALL in listing
+    1730 MEMDP3: JP      RFOR3  ; REGALL in listing
    
-2548 CHK46:
+    2548 CHK46:
         LD      DE,DISPBF+38    ;LD      HL, (DISP)    ; order in listing
         LD      IX,DISPBF       ;LD      DE, DISPBF+38
         LD      HL, (DISP)      ;AND     A
         AND     A               ;SBC     HL,DE           ;  ---- page 44 ----
         SBC     HL,DE           ;LD      IX, DISPBF
         
-3442 INPBF:  DEFS    38              ;Input buffer .   listing = 40
+    3442 INPBF:  DEFS    38              ;Input buffer .   listing = 40
 
 As yet unresolved: According the listing DISPBF starts at 0FF2Ch, but the 
 ROM disassembly has 0FF2Ah. For now the listing value is maintained.
