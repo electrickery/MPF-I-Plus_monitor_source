@@ -1,3 +1,6 @@
+; This file contains the API of the monitor program. Intended as a source 
+; to be used in user programs. Not integral, only the lines required.
+
 ;MPF-IP-User-Manual 5.1 - System Parameters
 ; combined with data from Monitor Source Program Listing
 
