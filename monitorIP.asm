@@ -234,7 +234,7 @@ RESET1:
 
         ORG     38H
 
-; Entry point of RST38H (opcodFF) or mode1 interrupt.
+; Entry point of RST38H (opcode FF) or mode1 interrupt.
 ; Fetch the addresss to redin location FF00 and FF01,
 ; then jump to this address. Initially, FF00 and FF01
 ; are set to 0066. So RST 38 will have the same effect
@@ -262,7 +262,7 @@ CONT28:
         LD      (ATEMP),A
 
 ; The monitor has changed the content of user's
-; program at break address.Then ext3 instructions
+; program at break address.Then next 3 instructions
 ; restored the destroyed content. BRAD contains the
 ; break address, BRDA contains the original data at
 ; break address.
@@ -270,8 +270,8 @@ CONT28:
         LD      HL,(BRAD)
         LD      A,(BRDA)
         LD      (HL),A
-; Send break enable signal to hardwr&counte1.
-; A nonmaskable interrupt will be issued at thethMi's.
+; Send break enable signal to hardware counter.
+; A nonmaskable interrupt will be issued at the 5th M1's.
 
         LD      A,11101111B
         OUT     (KIN),A
@@ -280,9 +280,9 @@ CONT28:
         NOP                 ; 3rd M1
         RET                 ; 4th M1
 
-; Return to user's program. Execute the 1nstruct100
+; Return to user's program. Execute the instruction
 ; at break address, After finishing one instruction,
-; a nonmaskable interrupt happensnd then returns
+; a nonmaskable interrupt happenend then returns
 ; to the monitor program again.
 ;
 RESET2:
@@ -314,8 +314,8 @@ NMI:
 ; user's registers and status. It also check the validity
 ; of user's SP.
 
-        LD      (ATEMP),A       ;SaveAregister
-        LD      A,0FFH  ;DisableBREAKsignaland all digits.
+        LD      (ATEMP),A       ;Save A register
+        LD      A,0FFH  ;Disable BREAK signal and all digits.
         OUT     (DIG1),A
         OUT     (DIG2),A
         OUT     (DIG3),A
@@ -360,7 +360,7 @@ RGSAVE: LD      (HLTEMP),HL     ;Save register HL
 SETIF:  LD      (USERIF),A
 ;
 
-        LD      SP,SYSSTK       ;Set SPtosystem stack.
+        LD      SP,SYSSTK       ;Set SP to system stack.
         
 ; The next 7 instructions check user's SP.
 ; If the user's SP points to a location not
@@ -405,42 +405,42 @@ SETST0:
 ; key pressed.
 ;                                                       ---- page 7 ----
 MAIN:
-        LD      SP,SYSSTK       ;Initialsystemstack.
-        CALL    SCAN            ;Scandisplayandinputkeys.
-                                ;RoutineSCANwillnotreturn
-                                ;untilanykeyispressed.
-                                ;Aftera keyisdetected,there
-                                ;willbeaccompaniedwitha
-                                ;beepsound.
+        LD      SP,SYSSTK       ;Initial system stack.
+        CALL    SCAN            ;Scan display and input keys.
+                                ;Routine SCAN will not return
+                                ;until any key is pressed.
+                                ;After a key is detected, there
+                                ;will be accompanied with a
+                                ;beep sound.
         PUSH    AF
         CALL    CLRBF
         POP     AF
-        CALL    KEYEXEC         ;Inputkeydispatchroutine.
-        JR      MAIN            ;BacktoMAIN,getmorekeys
-                                ;andexecutethem.
+        CALL    KEYEXEC         ;Input key dispatch routine.
+        JR      MAIN            ;Back to MAIN, get more keys
+                                ;and execute them.
 ;
 ;**************************************************************
 
 SETST2:
-        LD      HL,ERR_SP       ;DisplayERR_SP
+        LD      HL,ERR_SP       ;Display ERR_SP
         JR      SETST4
 SETST3:
-        LD      HL,SYS_SP       ;DisplaySYS_SP
+        LD      HL,SYS_SP       ;Display SYS_SP
 SETST4:
-        CALL    PRTMES          ;Printmessage
+        CALL    PRTMES          ;Print message
         SCF
         JR      SETST0
 
 ;**************************************************************
 
-;SOFTWAREESCcommand--Reentermontior.
-;ExecutedbydepressingtheQandCTRLkeystogether.
-;TheESCcommandescapesfromtheexistingcommand
-;andreturns tomonitor.
-;ESCisoperativeonlyinthecommandsthatsample
-;thekepboard.
-;MPFIPwillrespondstoESCbydisplayingtheMPFIP
-;montiorprompt<.
+;SOFTWARE ESC command -- Reenter montior.
+;Executed by depressing the Q and CTRL keys together.
+;The ESC command escapes from the existing command
+;and returns to monitor.
+;ESC is operative only in the commands that sample
+;the keyboard.
+;MPF_IP will responds to ESC by displaying the MPF_IP
+;monitor prompt <.
 
 ESCAPE:
         LD      SP,SYSSTK
@@ -450,14 +450,14 @@ ESCAPE:
 
 ;**************************************************************
 
-;ExecutedwheUParrow or DOWNarrowkeyispressed.454
+;Executed whe UP arrow or DOWN arrow key is pressed.
 
 FOR:
         LD      A,(TYPEFG)
         CP      10H         ;M
-        JP      Z,MFOR      ;Displaynextfourmemory
+        JP      Z,MFOR      ;Display next four memory
                             ;contents.
-        JP      NC,RFOR     ;Displaynextfourregister
+        JP      NC,RFOR     ;Display next four register
                             ;contents.
         JR      IGNORE
 BACK:   
@@ -537,10 +537,10 @@ IGNORE:
 
 ;**************************************************************
 
-;Executedbydepressingthe D and CTRL keys together.
-;Sincethedisassemblerislocatedonthemontior
-;ofprinter,sothatMPFIPwillignorecommandD
-;unlessprinter(PRT_MPF)isexists.
+;Executed by depressing the D and CTRL keys together.
+;Since the disassembler is located on the montior
+;of printer, so that MPF_IP will ignore command D
+;unless printer (PRT_MPF) is exists.
 
 DEASM3:
         CALL    PTESTT      ;Ret if printer is not exists
@@ -551,16 +551,16 @@ DEASM3:
         
 ;**************************************************************
 
-;Executedbydepressing B and CTRL keys together.
-;TheoptionalMPFIPBASICINTERPRETERisaBKROM
-;resident.Itissuppliedasone2764ROM thatplugs
-;intosocketU3.
-;ThestartingaddressofBASICINTERPRETERis2000H
-;MPFIPwillcheckthecontentofthememorylocation
-;2000His.0CDHornot.IfyesenterBASIC,otherwise
-;ignorethiscommandandreturntomonitor.
-;AvoidtochangingthecontentsinRAM ,weusedthe
-;commandCtoreenterBASIC.
+;Executed by depressing B and CTRL keys together.
+;The optional MPF_IP BASIC INTERPRETER is a 8K ROM
+;resident .It is supplied as one 2764 ROM that plugs
+;into socket U3.
+;The starting address of BASIC INTERPRETER is 2000H
+;MPF_IP will check the content of the memory location
+;2000H is 0CDH or not.If yes enter BASIC, otherwise
+;ignore this command and return to monitor.
+;Avoid to changing the contents in RAM ,we used the
+;command C to reenter BASIC.
 
 BASIC3:
         LD      B, A
@@ -595,7 +595,7 @@ PRTF:
 ;
 ;**************************************************************
 
-; Control sound command--Toggleswitchon/off
+; Control sound command--Toggles witch on/off
 
 BEEP_CONTROL:
         LD      HL,BEEPSET
@@ -611,11 +611,11 @@ BEEP_CONTROL:
 INI:
         LD      HL,0
         LD      (PRTFLG),HL     ;Set toggle printer
-                                ;switchon.
-                                ;Set togglesoundbeep
-                                ;switchon.
+                                ;switch on.
+                                ;Set toggle sound beep
+                                ;switch on.
 
-;The next7 instructionscheck IC onU4isRAMornot.
+;The next 7 instructions check IC on U4 is RAM or not.
 
         LD      HL,0F7FFH
 RAMT1:  LD      BC,800H
@@ -625,8 +625,8 @@ RAMT2:  CALL    RAMCHK
 TNEXT:   CPD
         JP      PE,RAMT2
 
-;Thenext.four instructionssetthedefaultvaluesaccording
-;toEDITORand ASSEMBLERrespectively.
+;The next four instructions set the default values according
+;to EDITOR and ASSEMBLER respectively.
 
         LD      HL,RAM4K_VALUE_SET
 INI6:
@@ -634,10 +634,10 @@ INI6:
         LD      BC,12
         LDIR
         
-        CALL    INI7        ;Getresetdisplaypattern.
+        CALL    INI7        ;Get reset display pattern.
         LD      IX,DISPBF   ;                           ---- page 11 ----
-                            ;Displaythefollowing
-                            ;patternssequence,each0.157
+                            ;Display the following
+                            ;patterns sequence, each 0.157
                             ;seconds:
                             ;       '                   *'
                             ;       '                  **'
@@ -691,22 +691,22 @@ INI4:   LD      HL,NMI
                             ;single step.
         LD      L,0E6H      ;Set SOFTWARE ESCAPE address
                             ;to be 00E6H.
-                            ;(i.e.,User'sprogram return
+                            ;(i.e.,User's program return
                             ;address.)
         LD      (USERSTK),HL               ;           ---- page 12 ----
         CALL    CLRI
 CLRB:
-;Clearbreakpointbysettingthebreakpointaddress
-;to1FFFH.Thisaddressisthelastaddressofmonitor
-; so,breakcanneverhappen.
+;Clear break point by setting the breakpoint address
+;to 1FFFH. This address is the last address of monitor
+; so,break can never happen.
 
         LD      HL,1FFFH
         LD      (BRAD),HL
         RET
 CLRI:
-; ClearlimitaddressofINSERTandDELETEcommand.
+; Clear limit address of INSERT and DELETE command.
 ; Avoid to changing the contents of SYSTEM RAM ,we must
-; setlimitaddress.
+; set limit address.
 ; The default value of limit address is 0FE00H.
 
         LD      HL,0FE00H
@@ -734,10 +734,10 @@ INI8:
 ;
 ;**************************************************************
 ; Function: Same asSCAN2 including BEEPeffect.
-; Input:SameasSCAN2
-; Output:Same asSCAN2
-; Regeffected:AFBCDEHLAF'BC'DE'HL'.
-; Call:SCAN2BEEP.
+; Input:Same as SCAN2
+; Output:Same as SCAN2
+; Reg effected:AF BC DE HL AF' BC' DE' HL'.
+; Call:SCAN2 BEEP.
 
 SCAN:
         CALL    SCAN2
@@ -745,19 +745,19 @@ SCAN:
         RET
 
 ;**************************************************************
-; Function: Scanthekeyboardanddisplay.Loopuntil
-;  a key is detected.If the some keyisalready
-;  pressedwhenthisroutinestartsexecution,
-;  returnwhennextkeyisentered.
-; Input:IXpointstothebuffercontainsdisplaypatterns.
-;  20 digits require 40 bytes of data.(IX) contains
-;  thepatternforthe leftmostdigit,(IX+39)contains        ---- page 13 ----
-;  thepatternfortherightmostdigit.
-; Output:internalcode ofthekeypressed.
-; Destroyedreg.:AF,BC,HL,AF',BC',DE',HL'.
-;  All other registers except IY are also
-;  changed during execution, but they are
-;  restoredbeforereturn.
+; Function: Scan the keyboard and display. Loop until
+;           a key is detected.If the some key is already
+;           pressed when this routine starts execution,
+;  return when next key is entered.
+; Input: IX points to the buffer contains display patterns.
+;        20 digits require 40 bytes of data.(IX) contains
+;        the pattern for the leftmost digit, (IX+39) contains        ---- page 13 ----
+;        the pattern for the rightmost digit.
+; Output: internal code of the key pressed.
+; Destroyed reg. : AF, BC, HL, AF' ,BC' ,DE' ,HL'.
+;                  All other registers except IY are also
+;                  changed during execution, but they are
+;                  restored before return.
 ; Call: SCAN1
 
 SCAN2:
@@ -772,8 +772,8 @@ SCAN2:
         JR      Z,SCPRE
         LD      IX,BLANK
 
-; Waituntilallkeysarereleasedfor47ms.
-; (The executiontime of SCANlis 15.7 ms,
+; Wait until all keys are released for 47 ms.
+; (The execution time of SCAN1 is 15.7 ms,
 ; 47=15.7*3).
 
 SCPRE:  LD      B,3
@@ -782,7 +782,7 @@ SCNX:   CALL    SCAN1           ;Get position code.
                                 ;reload the debounce counter
                                 ;B by 3.
         DJNZ    SCNX
-        RES     7,(HL)          ; Clear error flag.
+        RES     7,(HL)          ;Clear error flag.
         POP     IX              ;Restore original IX.
                                 
 ; Loop until any key is pressed.
@@ -790,9 +790,9 @@ SCNX:   CALL    SCAN1           ;Get position code.
 SCLOOP: CALL    SCAN1
         JR      C,SCLOOP
 
-; Convertthekey-position-code returnedbySCAN1 to
-; ASC II code.Thisisdoneby table-lookup.
-; ThetableusedisKEYTAB.
+; Convert the key-position-code returned by SCAN1 to
+; ASC II code. This is done by table-lookup.
+; The table used is KEYTAB.
 
 KEYMAP:
         LD      HL,KEYTAB
@@ -809,7 +809,7 @@ KEYMAP:
         POP     AF
         RET
 
-;Executedbydepressinganykeywith CTRLkey together.      ---- page 14 ----
+;Executed by depressing any key with CTRL key together.      ---- page 14 ----
 ;The key code is one byte stored in A register.
 
 KCTRL:
@@ -817,7 +817,7 @@ KCTRL:
         RES     6,A
         RET
 
-;ExecutedbydepressinganykeywithSHIFTkeytogether.
+;Executed by depressing any key with SHIFT key together.
 ;The key code is one byte stored in A register.
 
 KSHIFT:
@@ -836,17 +836,18 @@ KSHIFT:
         RET
 ;
 ;**************************************************************
-; Function;Scankeyboardanddisplayonecycle.
-;   Total executiontimeisabout16ms(exactly
-;   15.7ms,28040clockstates@1.79MHz).Input;SameasSCAN.
-; Output: i)nokeyduringonescan
-;           Carryflay--1
+; Function: Scan keyboard and display one cycle.
+;           Total execution time is about 16ms (exactly
+;           15.7ms, 28040 clock states @ 1.79MHz).
+; Input: Same as SCAN.
+; Output: i) no key during one scan
+;                 Carry flay -- 1
 ;        ii) key pressed during one scan
-;             Carryflag--0,
-;             A -- positioncodeofthekeypressed.
-;                  If more than one key is pressed, A
-;                  containsthe largestposition-code.
-;                  (Thiskeyisthelastkeyscannd.)
+;                 Carryflag -- 0,
+;                 A -- position code of the key pressed.
+;                      If more than one key is pressed, A
+;                      contains the largest position-code.
+;                      (This key is the last key scanned.)
 ; Destroyed reg: AF, AF', BC', DE', HL'. (see comments on SCAN)
 ; Call:none.
 
@@ -868,58 +869,58 @@ SCAN1:
         
 ;Carry flag of F' is used to return the status of
 ;the keyboard. If any key is pressed during one        ---- page 15 ----
-;scan,theflagisreset;otherwise,itisset.
-;Initially, thisflagisset.A'registerisused
-;tostoretheposition-codeofthekeypressed.
-;Inthisroutine,60keypositionsarecheckedone
-;byone.Cregistercontainsthecodeofthekey
-;beingchecked.Thevalue of Cis0atthebeginning,
-;andisincreasedby1aftereachcheck.Sothecode
-;rangesfrom0to3BH(total60positions).Oneach
-;check,iftheinputbitis0(keypressed),Cregister
-;iscopiedintoA'.ThecarryflagofF'issetalso.
-;Whensomekeyisdetected,thekeypositionsafter
-;thiskeywillstillbechecked.Soifmorethan
-;onekeyarepressedduringone scan,thecodeofthe
-;lastonewillbereturned.
+;scan,the flag is reset; otherwise, it is set.
+;Initially, this flag is set. A'register is used
+;to store the position-code of the key pressed.
+;In this routine, 60 key positions are checked one
+;by one. C register contains the code of the key
+;being checked. The value of C is 0 at the beginning,
+;and is increased by 1 after each check. So the code
+;ranges from 0 to 3BH (total 60 positions). On each
+;check, if the input bit is 0 (keypressed), C register
+;is copied into A'. The carry flag of F' is set also.
+;When some key is detected, the key positions after
+;this key will still be checked. So if more than
+;one key are pressed during one scan, the codeof the
+;last one will be returned.
         LD      C,0
-        LD      DE,0FFFEH       ;Activatethefirst digit.
+        LD      DE,0FFFEH       ;Activate the first digit.
         LD      L,D
-        LD      H,20            ;20digits.
+        LD      H,20            ;20 digits.
 KCOL:   LD      A,(IX+0)
-        OUT     (SEG1),A        ;Firstbytepattern.
+        OUT     (SEG1),A        ;First byte pattern.
         INC     IX
         LD      A,(IX+0)
-        OUT     (SEG2),A        ;2ndbytepattern.
+        OUT     (SEG2),A        ;2nd byte pattern.
         LD      A,E
-        OUT     (DIG1),A        ;1-8digits
+        OUT     (DIG1),A        ;1-8 digits
         LD      A,D
         OUT     (DIG2),A        ;9-16 digits
         LD      A,L
-        OUT     (DIG3),A        ;17-20digits
+        OUT     (DIG3),A        ;17-20 digits
         LD      B,COLDEL
-        DJNZ    $               ;Delay1.5msperdigit.
+        DJNZ    $               ;Delay1.5 ms per digit.
         PUSH    DE
-        LD      B,3             ;Eachcolomnhasthreekeys.
-        IN      A,(KIN)         ;Now,bit02ofAcontainsthe
-                                ;statusofthethreekeys in
-                                ;theactivaecolomn.
+        LD      B,3             ;Each colomn has three keys.
+        IN      A,(KIN)         ; Now,bit 02 of A contains the
+                                ;status of the three keys in
+                                ;the activae colomn.
         LD      D,A
-KROW:   RR      D               ;RotateD1 bit right
-                                ;bit0of D willberotate
-                                ;intocarry flag.
-        JR      C,NOKEY         ;Skipnext2instruction
-                                ;ifthekeyisnotpressed.
-                                ;Thenext 2instructions
-                                ;storethecurrentposition-code
-                                ;intoA'andresetcarryflag
-                                ;ofF'register.
+KROW:   RR      D               ; Rotate D 1 bit right
+                                ; bit 0 of D will be rotate
+                                ; into carry flag.
+        JR      C,NOKEY         ;Skip next 2 instruction
+                                ;if the key is not pressed.
+                                ;The next 2 instructions
+                                ;store the current position-code
+                                ;into A' and reset carry flag
+                                ;of F' register.
         LD      A,C
         EX      AF,AF'
-NOKEY:  INC     C               ;Increasecurrentkeycodeby1.
-        DJNZ    KROW            ;Loopuntil3keysinthe active
-                                ;colomnsareallchecked.
-        LD      A,0FFH          ;Disableallthe digits.
+NOKEY:  INC     C               ;Increase current key code by 1.
+        DJNZ    KROW            ;Loop until 3 keys in the active
+                                ;colomns are all checked.
+        LD      A,0FFH          ;Disable all the digits.
         OUT     (DIG1),A
         OUT     (DIG2),A
         OUT     (DIG3),A
@@ -936,20 +937,20 @@ RL2:    RL      L
         DEC     H
         JR      NZ,KCOL
         LD      DE,-40
-        ADD     IX,DE           ;GetoriginalIX.
+        ADD     IX,DE           ;Get original IX.
         EXX
         EX      AF,AF'
         RET
 
 ;**************************************************************
 
-;Exeutedwhen'M'keyispressed.
-;  Enterthehexadecimaladdressofthefirstofthe
-;fourmemorylocationstobedisplayed.
-; (1) Type<CR>	Displayspecifiedmemorycontents.
-; (2) Type	Altermemorycontents.
-; (3) Type	Memorydump.
-; (4) Type/	Movedatablockfromoneareatoanother.
+;Exeuted when 'M' key is pressed.
+;  Enter the hexadecimal address of the first of the
+;four memory locations to be displayed.
+; (1) Type <CR> -- Display specified memory contents.
+; (2) Type :    -- Alter memory contents.
+; (3) Type .    -- Memory dump.
+; (4) Type /    -- Move data block from one area to another.
 
 MEMEXC:
         CALL    MEMEX2
@@ -962,7 +963,7 @@ MEMEXC:
         JR      Z,MDUMP1
         CP      2FH             ;/
         JR      Z,MMOVE
-        CALL    MEMEX3          ;Displayspecifiedmemory
+        CALL    MEMEX3          ;Display specified memory
                                 ;contents.
         CALL    HEXX
 P102:   CALL    MEM3
@@ -971,22 +972,22 @@ P102:   CALL    MEM3
 
 ;**************************************************************
 
-;Theinputdataustbehexadecimalvalues.MPF_iPwill
-;ignorethiscommandifthereexistsatleastonedigit
-;whichisnotahexadecimalvalue.Theusercanusethe
-;BACKSPACEkey tocorrectthedata.
+;The input data must be hexadecimal values. MPF_IP will
+;ignore this command if there exists at least one digit
+;which is not a hexadecimal value. The user can use the
+;BACKSPACE key to correct the data.
 
 MEMEX2:
-        CALL    ECHO_CH          ;Echothe inputcharacterand
+        CALL    ECHO_CH         ;Echo the input character and
                                 ;prompt.
-MEMEX1: CALL    GET             ;Getastringofcharacters
-                                ;andendtheinputwith <CR>.
-        CALL    CHKINP          ;Checkhexadecimalvalues.
-        JR      C,MEMEX1        ;JumptoMEMEXliftheinput
+MEMEX1: CALL    GET             ;Get a string of characters
+                                ;and end the input with <CR>.
+        CALL    CHKINP          ;Check hexadecimal values.
+        JR      C,MEMEX1        ;Jump to MEMEX1 if the input
                                 ;data is illegal.      ---- page 17 ----
         CALL    CHKHEX          ;Get the hexadecimal address
                                 ;of the first of four memory
-                                ;locationstobedisplayed,
+                                ;locations to be displayed,
         LD      (MADDR),HL
         RET
         
